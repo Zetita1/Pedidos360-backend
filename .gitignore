@@ -1,0 +1,44 @@
+# --- Compilados y artefactos de Maven ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+!**/src/main/**/*.jar
+!**/src/test/**/*.jar
+
+# --- Logs y temporales de la JVM ---
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+*.hprof
+
+# --- IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+nbproject/private/
+build/
+!**/src/**/build/
+
+# --- Configuracion sensible: credenciales del IDaaS y de la base de datos ---
+# Nunca se versionan: en EC2 llegan por variables de entorno o AWS Parameter Store.
+.env
+.env.*
+application-local.yml
+application-secret*.yml
+*.pem
+*.p12
+*.jks
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db

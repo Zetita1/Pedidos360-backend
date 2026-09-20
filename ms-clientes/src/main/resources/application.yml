@@ -1,0 +1,97 @@
+server:
+  port: ${SERVER_PORT:8083}
+  shutdown: graceful
+  error:
+    include-message: never
+
+spring:
+  application:
+    name: ms-clientes
+  profiles:
+    default: local
+  jackson:
+    default-property-inclusion: non_null
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.format_sql: false
+
+# Parametros del IDaaS (Microsoft Entra ID). En EC2 se inyectan por variables de entorno
+# o por AWS Systems Manager Parameter Store; nunca se versionan valores reales.
+pedidos360:
+  security:
+    issuer: ${ENTRA_ISSUER:https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0}
+    jwk-set-uri: ${ENTRA_JWKS_URI:}
+    tenant-id: ${ENTRA_TENANT_ID:}
+    audiences: ${ENTRA_API_AUDIENCE:api://pedidos360-api}
+    required-scopes: ${ENTRA_REQUIRED_SCOPES:}
+    clock-skew-seconds: 60
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%X{correlationId}] %logger{36} - %msg%n"
+  level:
+    cl.duoc.pedidos360: ${LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
+
+---
+# Perfil de desarrollo local: base H2 en memoria, sin dependencia de la nube.
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:h2:mem:clientes;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:db/local/data-clientes.sql
+  flyway:
+    enabled: false
+
+---
+# Perfil productivo en AWS: PostgreSQL gestionado (Amazon RDS) + migraciones Flyway.
+spring:
+  config:
+    activate:
+      on-profile: aws
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME:pedidos360}?sslmode=require
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      connection-timeout: 20000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
