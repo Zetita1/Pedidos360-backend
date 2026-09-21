@@ -21,10 +21,14 @@ spring:
 # o por AWS Systems Manager Parameter Store; nunca se versionan valores reales.
 pedidos360:
   security:
-    issuer: ${ENTRA_ISSUER:https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0}
-    jwk-set-uri: ${ENTRA_JWKS_URI:}
-    tenant-id: ${ENTRA_TENANT_ID:}
-    audiences: ${ENTRA_API_AUDIENCE:api://pedidos360-api}
+    # Valor exacto del claim iss, leido de /.well-known/openid-configuration del tenant.
+    # Ojo: el issuer usa el tenantId como subdominio, el JWKS usa el subdominio del tenant.
+    issuer: ${ENTRA_ISSUER:https://9d265688-dbb5-4a46-9b9a-8f6765928aa0.ciamlogin.com/9d265688-dbb5-4a46-9b9a-8f6765928aa0/v2.0}
+    jwk-set-uri: ${ENTRA_JWKS_URI:https://pedidos360duocuc.ciamlogin.com/9d265688-dbb5-4a46-9b9a-8f6765928aa0/discovery/v2.0/keys}
+    tenant-id: ${ENTRA_TENANT_ID:9d265688-dbb5-4a46-9b9a-8f6765928aa0}
+    # Entra emite el aud como el App ID URI o como el client ID de la API segun el caso;
+    # se aceptan las variantes validas para este registro y ninguna otra.
+    audiences: ${ENTRA_API_AUDIENCE:api://pedidos360-api,api://e25c9a50-e056-4401-a2ef-f2d8fdefb77b,e25c9a50-e056-4401-a2ef-f2d8fdefb77b}
     required-scopes: ${ENTRA_REQUIRED_SCOPES:}
     clock-skew-seconds: 60
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
