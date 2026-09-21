@@ -1,0 +1,367 @@
+# AWS API Gateway (HTTP API) de Pedidos360 - definicion completa.
+#
+# Cada ruta se declara de forma explicita y se integra con el microservicio duenio del
+# recurso. El JWT authorizer valida el token de Microsoft Entra External ID (issuer,
+# audience, firma y vigencia) ANTES de reenviar la peticion al backend.
+#
+# Importar:
+#   aws apigatewayv2 import-api --body file://pedidos360-http-api.yaml
+#
+# Reemplazar antes de importar:
+#   ${ENTRA_TENANT_SUBDOMINIO}  subdominio del tenant externo (sin .ciamlogin.com)
+#   ${ENTRA_TENANT_ID}          Directory (tenant) ID
+#   ${API_AUDIENCE}             Application ID URI de la API, ej. api://pedidos360-api
+#   ${BACKEND_HOST}             DNS o IP de la instancia EC2 con los microservicios
+#   ${ORIGEN_SPA}               origen del frontend, ej. https://pedidos360.example.cl
+openapi: 3.0.1
+
+info:
+  title: Pedidos360 API
+  version: '1.0.0'
+  description: >-
+    Puerta de entrada unica del SPA Angular. Enruta cada recurso a su microservicio y
+    valida el JWT del IDaaS en todas las rutas salvo el health check.
+
+components:
+  securitySchemes:
+    EntraExternalId:
+      type: oauth2
+      flows: {}
+      x-amazon-apigateway-authorizer:
+        type: jwt
+        identitySource: $request.header.Authorization
+        jwtConfiguration:
+          # Debe coincidir exactamente con el claim iss del token. Verificalo en:
+          # https://${ENTRA_TENANT_SUBDOMINIO}.ciamlogin.com/${ENTRA_TENANT_ID}/v2.0/.well-known/openid-configuration
+          issuer: https://${ENTRA_TENANT_SUBDOMINIO}.ciamlogin.com/${ENTRA_TENANT_ID}/v2.0
+          # Debe coincidir con el claim aud. Sin esto, un token de otra app del mismo
+          # tenant seria aceptado.
+          audience:
+            - ${API_AUDIENCE}
+
+# Politica por defecto: toda ruta exige un JWT valido.
+security:
+  - EntraExternalId: []
+
+# CORS acotado: solo el origen del SPA, solo los metodos y cabeceras que se usan.
+x-amazon-apigateway-cors:
+  allowOrigins:
+    - ${ORIGEN_SPA}
+    - http://localhost:4200
+  allowMethods: [GET, POST, PUT, DELETE, OPTIONS]
+  allowHeaders: [authorization, content-type, x-correlation-id]
+  exposeHeaders: [x-correlation-id]
+  allowCredentials: false
+  maxAge: 1800
+
+paths:
+  # ------------------------------------------------------------------
+  # BFF (EC2 :8080) - vistas agregadas e identidad
+  # ------------------------------------------------------------------
+  /api/bff/perfil:
+    get:
+      summary: Identidad y permisos del usuario resueltos desde los claims del token
+      tags: [BFF]
+      responses:
+        '200': { description: Perfil del usuario }
+        '401': { description: Token ausente, vencido o invalido }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8080/api/bff/perfil
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/bff/tablero:
+    get:
+      summary: Indicadores agregados de pedidos y catalogo
+      tags: [BFF]
+      responses:
+        '200': { description: Datos del tablero }
+        '401': { description: Token ausente, vencido o invalido }
+        '403': { description: El token no trae el rol requerido }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8080/api/bff/tablero
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  # ------------------------------------------------------------------
+  # ms-pedidos (EC2 :8081)
+  # ------------------------------------------------------------------
+  /api/v1/pedidos:
+    get:
+      summary: Lista pedidos con filtros de estado y cliente
+      tags: [Pedidos]
+      responses:
+        '200': { description: Listado de pedidos }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      summary: Registra un pedido nuevo
+      tags: [Pedidos]
+      responses:
+        '201': { description: Pedido creado }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/pedidos/mis-pedidos:
+    get:
+      summary: Pedidos del usuario autenticado, resueltos por el claim oid
+      tags: [Pedidos]
+      responses:
+        '200': { description: Listado propio }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos/mis-pedidos
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/pedidos/resumen:
+    get:
+      summary: Cantidad de pedidos por estado
+      tags: [Pedidos]
+      responses:
+        '200': { description: Resumen por estado }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos/resumen
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/pedidos/{id}:
+    parameters: &idPath
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      summary: Detalle de un pedido
+      tags: [Pedidos]
+      responses:
+        '200': { description: Pedido }
+        '404': { description: No existe }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos/{id}
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/pedidos/{id}/confirmar:
+    parameters: *idPath
+    post:
+      summary: Confirma el pedido y descuenta stock
+      tags: [Pedidos]
+      responses:
+        '200': { description: Pedido confirmado }
+        '409': { description: Regla de negocio no cumplida }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos/{id}/confirmar
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/pedidos/{id}/estado:
+    parameters: *idPath
+    put:
+      summary: Avanza el pedido en su maquina de estados
+      tags: [Pedidos]
+      responses:
+        '200': { description: Estado actualizado }
+        '409': { description: Transicion invalida }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos/{id}/estado
+        httpMethod: PUT
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/pedidos/{id}/anular:
+    parameters: *idPath
+    put:
+      summary: Anula el pedido y repone el stock (rol Pedidos.Admin)
+      tags: [Pedidos]
+      responses:
+        '200': { description: Pedido anulado }
+        '403': { description: El token no trae el rol Pedidos.Admin }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8081/api/v1/pedidos/{id}/anular
+        httpMethod: PUT
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  # ------------------------------------------------------------------
+  # ms-productos (EC2 :8082)
+  # Las rutas internas de stock (/stock/descontar y /stock/reponer) NO se publican:
+  # solo las consume ms-pedidos dentro de la red privada.
+  # ------------------------------------------------------------------
+  /api/v1/productos:
+    get:
+      summary: Lista el catalogo con filtros
+      tags: [Productos]
+      responses:
+        '200': { description: Catalogo }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8082/api/v1/productos
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      summary: Crea un producto (rol Pedidos.Admin)
+      tags: [Productos]
+      responses:
+        '201': { description: Producto creado }
+        '403': { description: El token no trae el rol Pedidos.Admin }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8082/api/v1/productos
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/productos/categorias:
+    get:
+      summary: Categorias del catalogo
+      tags: [Productos]
+      responses:
+        '200': { description: Categorias }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8082/api/v1/productos/categorias
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/productos/{id}:
+    parameters: *idPath
+    get:
+      summary: Detalle de un producto
+      tags: [Productos]
+      responses:
+        '200': { description: Producto }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8082/api/v1/productos/{id}
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    put:
+      summary: Actualiza un producto (rol Pedidos.Admin)
+      tags: [Productos]
+      responses:
+        '200': { description: Producto actualizado }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8082/api/v1/productos/{id}
+        httpMethod: PUT
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    delete:
+      summary: Da de baja un producto (rol Pedidos.Admin)
+      tags: [Productos]
+      responses:
+        '204': { description: Producto dado de baja }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8082/api/v1/productos/{id}
+        httpMethod: DELETE
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  # ------------------------------------------------------------------
+  # ms-clientes (EC2 :8083)
+  # ------------------------------------------------------------------
+  /api/v1/clientes:
+    get:
+      summary: Lista clientes
+      tags: [Clientes]
+      responses:
+        '200': { description: Clientes }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8083/api/v1/clientes
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    post:
+      summary: Crea una ficha de cliente
+      tags: [Clientes]
+      responses:
+        '201': { description: Cliente creado }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8083/api/v1/clientes
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/clientes/mi-ficha:
+    get:
+      summary: Ficha del cliente asociada al usuario autenticado
+      tags: [Clientes]
+      responses:
+        '200': { description: Ficha }
+        '404': { description: El usuario no tiene ficha asociada }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8083/api/v1/clientes/mi-ficha
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  /api/v1/clientes/{id}:
+    parameters: *idPath
+    get:
+      summary: Detalle de un cliente
+      tags: [Clientes]
+      responses:
+        '200': { description: Cliente }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8083/api/v1/clientes/{id}
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+    put:
+      summary: Actualiza un cliente
+      tags: [Clientes]
+      responses:
+        '200': { description: Cliente actualizado }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8083/api/v1/clientes/{id}
+        httpMethod: PUT
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET
+
+  # ------------------------------------------------------------------
+  # Health check: unica ruta sin JWT, para el monitoreo del stage
+  # ------------------------------------------------------------------
+  /health:
+    get:
+      summary: Health check publico
+      tags: [Operacion]
+      security: []
+      responses:
+        '200': { description: Servicio operativo }
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        uri: http://${BACKEND_HOST}:8080/actuator/health
+        httpMethod: GET
+        payloadFormatVersion: '1.0'
+        connectionType: INTERNET

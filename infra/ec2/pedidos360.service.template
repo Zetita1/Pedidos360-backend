@@ -1,0 +1,42 @@
+# Plantilla de unidad systemd para cada microservicio de Pedidos360 en EC2 (Amazon Linux 2023).
+#
+# Copiar como /etc/systemd/system/<servicio>.service reemplazando SERVICIO, PUERTO y PERFIL:
+#   sudo sed -e 's/{{SERVICIO}}/bff-service/' -e 's/{{PUERTO}}/8080/' \
+#       pedidos360.service.template | sudo tee /etc/systemd/system/bff-service.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bff-service
+
+[Unit]
+Description=Pedidos360 - {{SERVICIO}}
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pedidos360
+Group=pedidos360
+WorkingDirectory=/opt/pedidos360/{{SERVICIO}}
+
+# Los secretos NO se versionan: se cargan desde un archivo generado en el arranque
+# a partir de AWS Systems Manager Parameter Store (ver user-data.sh).
+EnvironmentFile=/etc/pedidos360/{{SERVICIO}}.env
+Environment="SPRING_PROFILES_ACTIVE=aws"
+Environment="SERVER_PORT={{PUERTO}}"
+Environment="JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseSerialGC"
+
+ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/pedidos360/{{SERVICIO}}/app.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier={{SERVICIO}}
+
+# Endurecimiento basico del proceso
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

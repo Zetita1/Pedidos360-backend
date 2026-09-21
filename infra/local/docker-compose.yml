@@ -1,0 +1,29 @@
+# PostgreSQL local para probar el perfil "aws" (el mismo motor de Amazon RDS) sin salir
+# del computador del taller. Con el perfil "local" no hace falta: se usa H2 en memoria.
+#
+#   docker compose -f infra/local/docker-compose.yml up -d
+#
+# Luego levantar cada microservicio con:
+#   SPRING_PROFILES_ACTIVE=aws DB_HOST=localhost DB_NAME=pedidos360_productos \
+#   DB_USER=pedidos360 DB_PASSWORD=pedidos360 ./mvnw -pl ms-productos spring-boot:run
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pedidos360-postgres
+    environment:
+      POSTGRES_USER: pedidos360
+      POSTGRES_PASSWORD: pedidos360
+      POSTGRES_DB: pedidos360
+    ports:
+      - '5432:5432'
+    volumes:
+      - pedidos360-datos:/var/lib/postgresql/data
+      - ./crear-bases.sql:/docker-entrypoint-initdb.d/10-crear-bases.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pedidos360']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pedidos360-datos:
