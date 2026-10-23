@@ -4,17 +4,20 @@ Microservicios Spring Boot del sistema Pedidos360, protegidos con JWT emitido po
 **Microsoft Entra External ID** y pensados para correr en instancias **EC2** detras de
 **AWS API Gateway**.
 
-> DSY1107 Desarrollo Cloud Native I — Evaluaciones Parciales 1 y 2
+> DSY1107 Desarrollo Cloud Native I — Evaluaciones Parciales 1, 2 y 3
 
 ## Modulos
 
 | Modulo | Puerto | Que hace |
 |---|---|---|
 | `pedidos360-common-security` | — | libreria compartida: validacion del JWT, roles, CORS y errores Problem Detail |
+| `pedidos360-common-messaging` | — | libreria compartida: topologia de RabbitMQ, publicador de eventos y politica de ACK/DLQ |
 | `bff-service` | 8080 | Backend For Frontend: vistas agregadas (`tablero`) e identidad (`perfil`) |
 | `ms-pedidos` | 8081 | pedidos, detalle, totales y maquina de estados |
 | `ms-productos` | 8082 | catalogo y control de stock |
 | `ms-clientes` | 8083 | fichas de clientes y direcciones de despacho |
+| `ms-notificaciones` | 8084 | consume los eventos de RabbitMQ: avisos al cliente y tickets de pedidos |
+| `ms-mensajeria` | 8085 | administrador del broker: crea y elimina colas, exchanges y bindings |
 
 ## Requisitos
 
@@ -27,20 +30,34 @@ Microservicios Spring Boot del sistema Pedidos360, protegidos con JWT emitido po
 ./mvnw clean verify
 ```
 
-Esto compila los cuatro artefactos ejecutables y corre la bateria completa de pruebas
-(validacion de token, autorizacion por rol, persistencia y reglas de negocio).
+Esto compila los seis artefactos ejecutables y corre la bateria completa de pruebas
+(validacion de token, autorizacion por rol, persistencia, reglas de negocio y la politica de
+confirmacion de mensajes: ACK, reintento y DLQ).
 
 ## Ejecutar en local
 
 El perfil por defecto es `local`: **H2 en memoria** con datos de ejemplo, sin dependencias
 externas. Cada servicio en una terminal:
 
+Primero el broker, que si es una dependencia real:
+
 ```bash
-./mvnw -pl ms-productos spring-boot:run     # http://localhost:8082
-./mvnw -pl ms-clientes  spring-boot:run     # http://localhost:8083
-./mvnw -pl ms-pedidos   spring-boot:run     # http://localhost:8081
-./mvnw -pl bff-service  spring-boot:run     # http://localhost:8080
+docker compose -f infra/local/docker-compose.yml up -d rabbitmq   # consola en :15672
 ```
+
+Luego cada servicio en una terminal:
+
+```bash
+./mvnw -pl ms-productos      spring-boot:run   # http://localhost:8082
+./mvnw -pl ms-clientes       spring-boot:run   # http://localhost:8083
+./mvnw -pl ms-pedidos        spring-boot:run   # http://localhost:8081
+./mvnw -pl bff-service       spring-boot:run   # http://localhost:8080
+./mvnw -pl ms-notificaciones spring-boot:run   # http://localhost:8084
+./mvnw -pl ms-mensajeria     spring-boot:run   # http://localhost:8085
+```
+
+La mensajeria (colas, eventos, DLQ y el API del administrador) esta documentada en
+[`docs/08-mensajeria-rabbitmq.md`](docs/08-mensajeria-rabbitmq.md).
 
 Documentacion interactiva de cada servicio en `/swagger-ui.html`.
 
@@ -68,6 +85,10 @@ Todo se parametriza por variables de entorno; el repositorio no contiene ningun 
 | `ENTRA_ISSUER` | issuer v2.0 del tenant | `https://<subdominio>.ciamlogin.com/<tid>/v2.0` |
 | `ENTRA_JWKS_URI` | JWK Set (opcional; se deriva del issuer) | `https://<subdominio>.ciamlogin.com/<tid>/discovery/v2.0/keys` |
 | `ENTRA_TENANT_ID` | tenant aceptado (claim `tid`) | `2222...` |
+| `RABBITMQ_HOST` | host del broker | `localhost` |
+| `RABBITMQ_USER` / `RABBITMQ_PASSWORD` | credenciales del broker | `pedidos360` |
+| `MENSAJERIA_EXCHANGE` | exchange de eventos | `pedidos360.eventos` |
+| `MENSAJERIA_MAX_INTENTOS` | intentos antes de la DLQ | `3` |
 | `ENTRA_API_AUDIENCE` | audiencia aceptada (claim `aud`) | `api://pedidos360-api` |
 | `ENTRA_REQUIRED_SCOPES` | scopes minimos (claim `scp`) | `Pedidos.Read` |
 | `CORS_ALLOWED_ORIGINS` | origen del SPA | `http://localhost:4200` |

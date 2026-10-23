@@ -20,9 +20,12 @@
 
   <modules>
     <module>pedidos360-common-security</module>
+    <module>pedidos360-common-messaging</module>
     <module>ms-productos</module>
     <module>ms-clientes</module>
     <module>ms-pedidos</module>
+    <module>ms-notificaciones</module>
+    <module>ms-mensajeria</module>
     <module>bff-service</module>
   </modules>
 
@@ -39,6 +42,11 @@
       <dependency>
         <groupId>cl.duoc.pedidos360</groupId>
         <artifactId>pedidos360-common-security</artifactId>
+        <version>${pedidos360.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>cl.duoc.pedidos360</groupId>
+        <artifactId>pedidos360-common-messaging</artifactId>
         <version>${pedidos360.version}</version>
       </dependency>
       <dependency>

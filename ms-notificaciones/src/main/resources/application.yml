@@ -1,0 +1,144 @@
+server:
+  port: ${SERVER_PORT:8084}
+  shutdown: graceful
+  error:
+    include-message: never
+
+spring:
+  application:
+    name: ms-notificaciones
+  profiles:
+    default: local
+  jackson:
+    default-property-inclusion: non_null
+  # Broker de mensajeria. En local corre en Docker (infra/local/docker-compose.yml) y en la
+  # instancia EC2 corre como servicio; nunca se versionan credenciales reales.
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:pedidos360}
+    password: ${RABBITMQ_PASSWORD:pedidos360}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    connection-timeout: 5s
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.format_sql: false
+
+# Parametros del IDaaS (Microsoft Entra ID). En EC2 se inyectan por variables de entorno
+# o por AWS Systems Manager Parameter Store; nunca se versionan valores reales.
+pedidos360:
+  security:
+    # Valor exacto del claim iss, leido de /.well-known/openid-configuration del tenant.
+    # Ojo: el issuer usa el tenantId como subdominio, el JWKS usa el subdominio del tenant.
+    issuer: ${ENTRA_ISSUER:https://9d265688-dbb5-4a46-9b9a-8f6765928aa0.ciamlogin.com/9d265688-dbb5-4a46-9b9a-8f6765928aa0/v2.0}
+    jwk-set-uri: ${ENTRA_JWKS_URI:https://pedidos360duocuc.ciamlogin.com/9d265688-dbb5-4a46-9b9a-8f6765928aa0/discovery/v2.0/keys}
+    tenant-id: ${ENTRA_TENANT_ID:9d265688-dbb5-4a46-9b9a-8f6765928aa0}
+    # Entra emite el aud como el App ID URI o como el client ID de la API segun el caso;
+    # se aceptan las variantes validas para este registro y ninguna otra.
+    audiences: ${ENTRA_API_AUDIENCE:api://pedidos360-api,api://e25c9a50-e056-4401-a2ef-f2d8fdefb77b,e25c9a50-e056-4401-a2ef-f2d8fdefb77b}
+    required-scopes: ${ENTRA_REQUIRED_SCOPES:}
+    clock-skew-seconds: 60
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+  # Nombres de exchanges, colas y routing keys: unica fuente de verdad de la mensajeria.
+  mensajeria:
+    exchange: ${MENSAJERIA_EXCHANGE:pedidos360.eventos}
+    exchange-descarte: ${MENSAJERIA_EXCHANGE_DESCARTE:pedidos360.eventos.dlx}
+    sufijo-dlq: ${MENSAJERIA_SUFIJO_DLQ:.dlq}
+    sufijo-reintento: ${MENSAJERIA_SUFIJO_REINTENTO:.retry}
+    max-intentos: ${MENSAJERIA_MAX_INTENTOS:3}
+    espera-reintento-ms: ${MENSAJERIA_ESPERA_REINTENTO_MS:5000}
+    consumidores: ${MENSAJERIA_CONSUMIDORES:2}
+    rutas:
+      pedido-creado: ${MENSAJERIA_RUTA_PEDIDO_CREADO:pedido.creado}
+      pedido-confirmado: ${MENSAJERIA_RUTA_PEDIDO_CONFIRMADO:pedido.confirmado}
+      pedido-estado-cambiado: ${MENSAJERIA_RUTA_PEDIDO_ESTADO:pedido.estado-cambiado}
+    colas:
+      notificaciones: ${MENSAJERIA_COLA_NOTIFICACIONES:pedidos360.notificaciones}
+      documentos: ${MENSAJERIA_COLA_DOCUMENTOS:pedidos360.documentos}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%X{correlationId}] %logger{36} - %msg%n"
+  level:
+    cl.duoc.pedidos360: ${LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
+
+---
+# Perfil de desarrollo local: base H2 en memoria, sin dependencia de la nube.
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:h2:mem:notificaciones;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+
+---
+# Perfil productivo en AWS: PostgreSQL gestionado (Amazon RDS) + migraciones Flyway.
+spring:
+  config:
+    activate:
+      on-profile: aws
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME:pedidos360}?sslmode=require
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      connection-timeout: 20000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+---
+# Perfil de pruebas: sin broker. Los listeners no arrancan y los tests llaman a los
+# servicios de negocio directamente.
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:notificaciones-test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false

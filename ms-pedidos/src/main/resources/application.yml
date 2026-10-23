@@ -11,6 +11,15 @@ spring:
     default: local
   jackson:
     default-property-inclusion: non_null
+  # Broker de mensajeria. En local corre en Docker (infra/local/docker-compose.yml) y en la
+  # instancia EC2 corre como servicio; nunca se versionan credenciales reales.
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:pedidos360}
+    password: ${RABBITMQ_PASSWORD:pedidos360}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    connection-timeout: 5s
   jpa:
     open-in-view: false
     properties:
@@ -37,6 +46,23 @@ pedidos360:
     clientes-url: ${MS_CLIENTES_URL:http://localhost:8083}
     connect-timeout: 3s
     read-timeout: 8s
+
+  # Nombres de exchanges, colas y routing keys: unica fuente de verdad de la mensajeria.
+  mensajeria:
+    exchange: ${MENSAJERIA_EXCHANGE:pedidos360.eventos}
+    exchange-descarte: ${MENSAJERIA_EXCHANGE_DESCARTE:pedidos360.eventos.dlx}
+    sufijo-dlq: ${MENSAJERIA_SUFIJO_DLQ:.dlq}
+    sufijo-reintento: ${MENSAJERIA_SUFIJO_REINTENTO:.retry}
+    max-intentos: ${MENSAJERIA_MAX_INTENTOS:3}
+    espera-reintento-ms: ${MENSAJERIA_ESPERA_REINTENTO_MS:5000}
+    consumidores: ${MENSAJERIA_CONSUMIDORES:2}
+    rutas:
+      pedido-creado: ${MENSAJERIA_RUTA_PEDIDO_CREADO:pedido.creado}
+      pedido-confirmado: ${MENSAJERIA_RUTA_PEDIDO_CONFIRMADO:pedido.confirmado}
+      pedido-estado-cambiado: ${MENSAJERIA_RUTA_PEDIDO_ESTADO:pedido.estado-cambiado}
+    colas:
+      notificaciones: ${MENSAJERIA_COLA_NOTIFICACIONES:pedidos360.notificaciones}
+      documentos: ${MENSAJERIA_COLA_DOCUMENTOS:pedidos360.documentos}
 
 management:
   endpoints:

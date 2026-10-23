@@ -13,5 +13,10 @@ public interface ClientesClient {
 
   /** Vista reducida del cliente que necesita el pedido. */
   record ClienteInfo(
-      Long id, String rut, String razonSocial, String direccionFormateada, boolean activo) {}
+      Long id,
+      String rut,
+      String razonSocial,
+      String email,
+      String direccionFormateada,
+      boolean activo) {}
 }

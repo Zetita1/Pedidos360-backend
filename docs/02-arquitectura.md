@@ -15,12 +15,22 @@ flowchart LR
     BFF --> MPr
     MP --> MPr
     MP --> MC
+    GW --> MN[ms-notificaciones :8084]
+    GW --> MM[ms-mensajeria :8085<br/>administra el broker]
+    MP -->|6. publica eventos| MQ{{RabbitMQ<br/>pedidos360.eventos}}
+    MQ -->|notificaciones| MN
+    MQ -->|documentos| MN
+    MQ -.->|rechazos| DLQ[(DLQ por cola)]
+    MM -.->|declara y elimina| MQ
     MP --> DB[(Amazon RDS<br/>PostgreSQL)]
     MPr --> DB
     MC --> DB
+    MN --> DB
     IDaaS -. JWKS .-> BFF
     IDaaS -. JWKS .-> MP
 ```
+
+El detalle de la mensajeria esta en [08-mensajeria-rabbitmq.md](08-mensajeria-rabbitmq.md).
 
 ## Por que el token se valida tres veces
 
@@ -51,10 +61,13 @@ confia en que "alguien antes ya lo reviso".
 | Modulo | Puerto | Responsabilidad |
 |---|---|---|
 | `pedidos360-common-security` | — | validacion de JWT, roles, CORS y Problem Detail compartidos |
+| `pedidos360-common-messaging` | — | topologia de RabbitMQ, publicador de eventos y politica de ACK |
 | `bff-service` | 8080 | vistas agregadas (`tablero`) e identidad (`perfil`) |
 | `ms-pedidos` | 8081 | pedidos, detalle y maquina de estados |
 | `ms-productos` | 8082 | catalogo y control de stock |
 | `ms-clientes` | 8083 | fichas de clientes y direcciones |
+| `ms-notificaciones` | 8084 | consume los eventos: avisos al cliente y tickets de pedidos |
+| `ms-mensajeria` | 8085 | administra colas, exchanges y bindings del broker |
 
 ## Modelo de datos
 

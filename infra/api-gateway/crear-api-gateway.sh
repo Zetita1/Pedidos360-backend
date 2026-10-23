@@ -11,6 +11,9 @@
 #   export API_AUDIENCE=api://pedidos360-api
 #   export API_CLIENT_ID=<client-id-del-registro-de-la-api>   # opcional, ver abajo
 #   export BACKEND_HOST=54.156.41.241                          # IP elastica del EC2
+#
+# Si el API ya existe y solo faltan las rutas de mensajeria, usar
+# agregar-rutas-mensajeria.sh en vez de este script.
 #   ./crear-api-gateway.sh
 set -euo pipefail
 # Git Bash convierte los argumentos que empiezan con "/" en rutas de Windows; se desactiva.
@@ -107,6 +110,8 @@ INT_BFF="$(crear_integracion 8080)"
 INT_PEDIDOS="$(crear_integracion 8081)"
 INT_PRODUCTOS="$(crear_integracion 8082)"
 INT_CLIENTES="$(crear_integracion 8083)"
+INT_NOTIFICACIONES="$(crear_integracion 8084)"
+INT_MENSAJERIA="$(crear_integracion 8085)"
 # /health apunta directo al actuator del BFF, sin reescribir la ruta.
 INT_HEALTH="$(aws apigatewayv2 create-integration \
   --region "${REGION}" \
@@ -116,7 +121,8 @@ INT_HEALTH="$(aws apigatewayv2 create-integration \
   --payload-format-version 1.0 \
   --integration-uri "http://${BACKEND_HOST}:8080/actuator/health" \
   --query 'IntegrationId' --output text)"
-echo "    bff=${INT_BFF} pedidos=${INT_PEDIDOS} productos=${INT_PRODUCTOS} clientes=${INT_CLIENTES} health=${INT_HEALTH}"
+echo "    bff=${INT_BFF} pedidos=${INT_PEDIDOS} productos=${INT_PRODUCTOS} clientes=${INT_CLIENTES}"
+echo "    notificaciones=${INT_NOTIFICACIONES} mensajeria=${INT_MENSAJERIA} health=${INT_HEALTH}"
 
 echo "==> 4/5 Creando las rutas (todas con validacion JWT salvo /health)"
 crear_ruta() {
@@ -161,6 +167,25 @@ crear_ruta 'GET /api/v1/clientes/mi-ficha'          "${INT_CLIENTES}"
 crear_ruta 'GET /api/v1/clientes/{id}'              "${INT_CLIENTES}"
 crear_ruta 'PUT /api/v1/clientes/{id}'              "${INT_CLIENTES}"
 
+# ms-notificaciones: avisos y tickets generados al consumir los eventos de RabbitMQ
+crear_ruta 'GET /api/v1/notificaciones'                          "${INT_NOTIFICACIONES}"
+crear_ruta 'GET /api/v1/notificaciones/pedido/{numero}'          "${INT_NOTIFICACIONES}"
+crear_ruta 'GET /api/v1/notificaciones/documentos'               "${INT_NOTIFICACIONES}"
+crear_ruta 'GET /api/v1/notificaciones/documentos/pedido/{numero}' "${INT_NOTIFICACIONES}"
+
+# ms-mensajeria: administracion de colas, exchanges y bindings
+crear_ruta 'GET /api/v1/mensajeria/topologia'                    "${INT_MENSAJERIA}"
+crear_ruta 'GET /api/v1/mensajeria/colas'                        "${INT_MENSAJERIA}"
+crear_ruta 'POST /api/v1/mensajeria/colas'                       "${INT_MENSAJERIA}"
+crear_ruta 'GET /api/v1/mensajeria/colas/{nombre}'               "${INT_MENSAJERIA}"
+crear_ruta 'DELETE /api/v1/mensajeria/colas/{nombre}'            "${INT_MENSAJERIA}"
+crear_ruta 'POST /api/v1/mensajeria/colas/{nombre}/purgar'       "${INT_MENSAJERIA}"
+crear_ruta 'GET /api/v1/mensajeria/exchanges'                    "${INT_MENSAJERIA}"
+crear_ruta 'POST /api/v1/mensajeria/exchanges'                   "${INT_MENSAJERIA}"
+crear_ruta 'DELETE /api/v1/mensajeria/exchanges/{nombre}'        "${INT_MENSAJERIA}"
+crear_ruta 'POST /api/v1/mensajeria/bindings'                    "${INT_MENSAJERIA}"
+crear_ruta 'DELETE /api/v1/mensajeria/bindings'                  "${INT_MENSAJERIA}"
+
 # Health check: unica ruta sin token. Se reescribe al actuator del BFF.
 crear_ruta 'GET /health'                            "${INT_HEALTH}" no
 
@@ -184,7 +209,7 @@ cat <<RESUMEN
  Issuer    : ${ISSUER}
  Audiencias: [${AUDIENCIAS}]
  Backend   : ${BACKEND_HOST}
- Rutas     : 22 (21 con JWT + /health publico)
+ Rutas     : 37 (36 con JWT + /health publico)
 
  Pruebas rapidas:
    curl -i ${URL}/api/v1/productos            # 401 sin token

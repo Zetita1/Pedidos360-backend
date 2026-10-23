@@ -1,5 +1,8 @@
-# PostgreSQL local para probar el perfil "aws" (el mismo motor de Amazon RDS) sin salir
-# del computador del taller. Con el perfil "local" no hace falta: se usa H2 en memoria.
+# Infraestructura local del taller:
+#   - PostgreSQL para probar el perfil "aws" (el mismo motor de Amazon RDS). Con el perfil
+#     "local" no hace falta: se usa H2 en memoria.
+#   - RabbitMQ con el plugin de gestion, que si se necesita siempre: los microservicios
+#     publican y consumen eventos contra este broker.
 #
 #   docker compose -f infra/local/docker-compose.yml up -d
 #
@@ -25,5 +28,24 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: pedidos360-rabbitmq
+    hostname: pedidos360-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: pedidos360
+      RABBITMQ_DEFAULT_PASS: pedidos360
+    ports:
+      - '5672:5672'    # AMQP: lo usan los microservicios
+      - '15672:15672'  # consola web y API de gestion (http://localhost:15672)
+    volumes:
+      - pedidos360-rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_running']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
 volumes:
   pedidos360-datos:
+  pedidos360-rabbitmq:

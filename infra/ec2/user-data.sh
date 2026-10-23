@@ -25,6 +25,8 @@ DB_HOST="$(leer_parametro rds/host)"
 DB_USER="$(leer_parametro rds/usuario)"
 DB_PASSWORD="$(leer_parametro rds/password)"
 CORS_ORIGINS="$(leer_parametro app/cors-origins)"
+RABBITMQ_USER="$(leer_parametro rabbitmq/usuario)"
+RABBITMQ_PASSWORD="$(leer_parametro rabbitmq/password)"
 
 escribir_env() {
   local servicio="$1" base_datos="$2"
@@ -41,6 +43,11 @@ DB_PASSWORD=${DB_PASSWORD}
 MS_PEDIDOS_URL=http://localhost:8081
 MS_PRODUCTOS_URL=http://localhost:8082
 MS_CLIENTES_URL=http://localhost:8083
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USER=${RABBITMQ_USER}
+RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+RABBITMQ_GESTION_URL=http://localhost:15672
 ENV
   chmod 600 "/etc/pedidos360/${servicio}.env"
 }
@@ -49,5 +56,7 @@ escribir_env bff-service pedidos360
 escribir_env ms-pedidos pedidos360_pedidos
 escribir_env ms-productos pedidos360_productos
 escribir_env ms-clientes pedidos360_clientes
+escribir_env ms-notificaciones pedidos360_notificaciones
+escribir_env ms-mensajeria pedidos360
 
 echo "Instancia preparada. Suba los jar a /opt/pedidos360/<servicio>/app.jar y habilite los servicios."

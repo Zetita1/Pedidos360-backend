@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import cl.duoc.pedidos360.pedidos.client.CatalogoClient;
 import cl.duoc.pedidos360.pedidos.client.CatalogoClient.ProductoInfo;
+import cl.duoc.pedidos360.mensajeria.publicacion.PublicadorEventos;
 import cl.duoc.pedidos360.pedidos.client.ClientesClient;
 import cl.duoc.pedidos360.pedidos.client.ClientesClient.ClienteInfo;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -46,6 +47,9 @@ class PedidoApiTest {
   @MockitoBean private CatalogoClient catalogoClient;
   @MockitoBean private ClientesClient clientesClient;
 
+  /** La publicacion de eventos se simula: las pruebas no dependen de un broker levantado. */
+  @MockitoBean private PublicadorEventos publicadorEventos;
+
   private static SimpleGrantedAuthority rol(String rol) {
     return new SimpleGrantedAuthority("ROLE_" + rol);
   }
@@ -55,7 +59,12 @@ class PedidoApiTest {
     given(clientesClient.obtener(1L))
         .willReturn(
             new ClienteInfo(
-                1L, "76123456-7", "Comercial Andes SpA", "Av. Providencia 1234, Santiago", true));
+                1L,
+                "76123456-7",
+                "Comercial Andes SpA",
+                "contacto@comercialandes.cl",
+                "Av. Providencia 1234, Santiago",
+                true));
     given(catalogoClient.obtener(1L))
         .willReturn(new ProductoInfo(1L, "NB-001", "Notebook Pro 14", new BigDecimal("100000"), 10, true));
     given(catalogoClient.obtener(2L))

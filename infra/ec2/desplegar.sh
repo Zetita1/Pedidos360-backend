@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Despliegue de los cuatro artefactos de Pedidos360 en una instancia EC2.
+# Despliegue de los seis artefactos de Pedidos360 en una instancia EC2.
 #
 # Uso: ./desplegar.sh <host-ec2> <ruta-llave.pem>
 set -euo pipefail
@@ -17,6 +17,8 @@ declare -A SERVICIOS=(
   [ms-pedidos]=8081
   [ms-productos]=8082
   [ms-clientes]=8083
+  [ms-notificaciones]=8084
+  [ms-mensajeria]=8085
 )
 
 for servicio in "${!SERVICIOS[@]}"; do
@@ -33,6 +35,6 @@ for servicio in "${!SERVICIOS[@]}"; do
 done
 
 echo "==> Verificando health checks"
-for puerto in 8080 8081 8082 8083; do
+for puerto in 8080 8081 8082 8083 8084 8085; do
   ssh -i "${LLAVE}" "${USUARIO}@${HOST}" "curl -fsS http://localhost:${puerto}/actuator/health" && echo
 done

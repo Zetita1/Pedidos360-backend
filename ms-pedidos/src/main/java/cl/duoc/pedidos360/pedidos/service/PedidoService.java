@@ -6,6 +6,11 @@ import cl.duoc.pedidos360.pedidos.client.ClientesClient;
 import cl.duoc.pedidos360.pedidos.client.ClientesClient.ClienteInfo;
 import cl.duoc.pedidos360.pedidos.domain.DetallePedido;
 import cl.duoc.pedidos360.pedidos.domain.EstadoPedido;
+import cl.duoc.pedidos360.mensajeria.evento.PedidoConfirmadoEvento;
+import cl.duoc.pedidos360.mensajeria.evento.PedidoConfirmadoEvento.LineaEvento;
+import cl.duoc.pedidos360.mensajeria.evento.PedidoCreadoEvento;
+import cl.duoc.pedidos360.mensajeria.evento.PedidoEstadoCambiadoEvento;
+import cl.duoc.pedidos360.mensajeria.publicacion.PublicadorEventos;
 import cl.duoc.pedidos360.pedidos.domain.Pedido;
 import cl.duoc.pedidos360.pedidos.repository.PedidoRepository;
 import cl.duoc.pedidos360.pedidos.web.PedidoDtos.CrearPedidoRequest;
@@ -14,6 +19,7 @@ import cl.duoc.pedidos360.pedidos.web.PedidoDtos.ResumenEstado;
 import cl.duoc.pedidos360.web.RecursoNoEncontradoException;
 import cl.duoc.pedidos360.web.ReglaNegocioException;
 import java.time.Year;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,12 +40,17 @@ public class PedidoService {
   private final PedidoRepository repository;
   private final CatalogoClient catalogoClient;
   private final ClientesClient clientesClient;
+  private final PublicadorEventos publicadorEventos;
 
   public PedidoService(
-      PedidoRepository repository, CatalogoClient catalogoClient, ClientesClient clientesClient) {
+      PedidoRepository repository,
+      CatalogoClient catalogoClient,
+      ClientesClient clientesClient,
+      PublicadorEventos publicadorEventos) {
     this.repository = repository;
     this.catalogoClient = catalogoClient;
     this.clientesClient = clientesClient;
+    this.publicadorEventos = publicadorEventos;
   }
 
   @Transactional(readOnly = true)
@@ -132,6 +143,16 @@ public class PedidoService {
         cliente.rut(),
         usuarioOid,
         guardado.getTotal());
+
+    publicadorEventos.publicar(
+        PedidoCreadoEvento.de(
+            guardado.getNumero(),
+            guardado.getId(),
+            cliente.id(),
+            cliente.razonSocial(),
+            cliente.email(),
+            guardado.getTotal(),
+            guardado.getDetalles().size()));
     return guardado;
   }
 
@@ -158,6 +179,16 @@ public class PedidoService {
                     detalle.getCantidad(),
                     "Confirmacion pedido " + pedido.getNumero()));
     log.info("Pedido {} confirmado", pedido.getNumero());
+
+    publicadorEventos.publicar(
+        PedidoConfirmadoEvento.de(
+            pedido.getNumero(),
+            pedido.getId(),
+            pedido.getClienteId(),
+            pedido.getClienteRazonSocial(),
+            emailDelCliente(pedido.getClienteId()),
+            pedido.getTotal(),
+            pedido.getDetalles().stream().map(PedidoService::aLineaEvento).toList()));
     return pedido;
   }
 
@@ -177,6 +208,7 @@ public class PedidoService {
       return confirmar(id);
     }
 
+    EstadoPedido estadoAnterior = pedido.getEstado();
     boolean devolverStock = destino == EstadoPedido.ANULADO && pedido.getEstado().reservaStock();
     pedido.cambiarEstado(destino);
 
@@ -191,6 +223,16 @@ public class PedidoService {
                       "Anulacion pedido " + pedido.getNumero()));
     }
     log.info("Pedido {} paso a estado {} (motivo: {})", pedido.getNumero(), destino, motivo);
+
+    publicadorEventos.publicar(
+        PedidoEstadoCambiadoEvento.de(
+            pedido.getNumero(),
+            pedido.getId(),
+            pedido.getClienteId(),
+            emailDelCliente(pedido.getClienteId()),
+            estadoAnterior.name(),
+            destino.name(),
+            motivo));
     return pedido;
   }
 
@@ -199,6 +241,40 @@ public class PedidoService {
     Pedido pedido = obtener(id);
     pedido.actualizarDespacho(direccion, observacion);
     return pedido;
+  }
+
+  /**
+   * Correo del cliente para avisarle del evento. Es un dato de contacto, no una regla de
+   * negocio: si ms-clientes no responde, el evento viaja sin correo y el consumidor lo
+   * resuelve como corresponda.
+   *
+   * @param clienteId identificador del cliente
+   * @return correo del cliente o {@code null} si no se pudo obtener
+   */
+  private String emailDelCliente(Long clienteId) {
+    try {
+      ClienteInfo cliente = clientesClient.obtener(clienteId);
+      return cliente == null ? null : cliente.email();
+    } catch (RuntimeException e) {
+      log.warn("No fue posible obtener el correo del cliente {}: {}", clienteId, e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Convierte una linea del pedido al formato que viaja en el evento.
+   *
+   * @param detalle linea del pedido
+   * @return linea del evento
+   */
+  private static LineaEvento aLineaEvento(DetallePedido detalle) {
+    BigDecimal precio = detalle.getPrecioUnitario();
+    return new LineaEvento(
+        detalle.getSku(),
+        detalle.getNombreProducto(),
+        detalle.getCantidad(),
+        precio,
+        detalle.subtotal());
   }
 
   /**

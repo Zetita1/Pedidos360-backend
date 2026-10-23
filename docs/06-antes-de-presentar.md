@@ -150,6 +150,8 @@ Con auto-deploy en el stage `$default`, el cambio se publica al instante.
 - [ ] `curl $URL/health` devuelve 200
 - [ ] `curl $URL/api/v1/productos` devuelve 401
 - [ ] Login en `https://main.d1pem9n2nc75cz.amplifyapp.com` y el tablero carga datos
+- [ ] Crear un pedido y ver el aviso en la vista **Notificaciones** (prueba la mensajeria)
+- [ ] La vista **Mensajeria** lista las colas con sus consumidores
 - [ ] Capturas del 403 y del Perfil a mano, por si falla la demo en vivo
 - [ ] Portal de Entra abierto en el tenant **Pedidos360**
 - [ ] Consola de API Gateway abierta en **Rutas** y **Autorización**

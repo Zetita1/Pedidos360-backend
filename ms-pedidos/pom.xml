@@ -20,6 +20,10 @@
       <artifactId>pedidos360-common-security</artifactId>
     </dependency>
     <dependency>
+      <groupId>cl.duoc.pedidos360</groupId>
+      <artifactId>pedidos360-common-messaging</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
