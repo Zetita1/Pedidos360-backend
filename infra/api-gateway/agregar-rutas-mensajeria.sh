@@ -63,6 +63,8 @@ crear_ruta 'GET /api/v1/notificaciones'                          "${INT_NOTIFICA
 crear_ruta 'GET /api/v1/notificaciones/pedido/{numero}'          "${INT_NOTIFICACIONES}"
 crear_ruta 'GET /api/v1/notificaciones/documentos'               "${INT_NOTIFICACIONES}"
 crear_ruta 'GET /api/v1/notificaciones/documentos/pedido/{numero}' "${INT_NOTIFICACIONES}"
+crear_ruta 'GET /api/v1/notificaciones/auditoria'                "${INT_NOTIFICACIONES}"
+crear_ruta 'GET /api/v1/notificaciones/auditoria/pedido/{numero}' "${INT_NOTIFICACIONES}"
 
 # ms-mensajeria: administracion del broker
 crear_ruta 'GET /api/v1/mensajeria/topologia'                    "${INT_MENSAJERIA}"
@@ -90,7 +92,7 @@ cat <<RESUMEN
 ==========================================================
  ApiId     : ${API_ID}
  Endpoint  : ${URL}
- Rutas     : 15 nuevas (${TOTAL} en total)
+ Rutas     : 17 nuevas (${TOTAL} en total)
  Backend   : ${BACKEND_HOST} (8084 y 8085)
 
  Con auto-deploy en el stage \$default quedan publicadas al instante.

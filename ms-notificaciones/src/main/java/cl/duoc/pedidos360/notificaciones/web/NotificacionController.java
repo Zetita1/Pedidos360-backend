@@ -1,7 +1,9 @@
 package cl.duoc.pedidos360.notificaciones.web;
 
+import cl.duoc.pedidos360.notificaciones.service.AuditoriaService;
 import cl.duoc.pedidos360.notificaciones.service.DocumentoService;
 import cl.duoc.pedidos360.notificaciones.service.NotificacionService;
+import cl.duoc.pedidos360.notificaciones.web.NotificacionDtos.AuditoriaResponse;
 import cl.duoc.pedidos360.notificaciones.web.NotificacionDtos.DocumentoResponse;
 import cl.duoc.pedidos360.notificaciones.web.NotificacionDtos.NotificacionResponse;
 import cl.duoc.pedidos360.security.SecurityRoles;
@@ -33,10 +35,15 @@ public class NotificacionController {
 
   private final NotificacionService notificaciones;
   private final DocumentoService documentos;
+  private final AuditoriaService auditoria;
 
-  public NotificacionController(NotificacionService notificaciones, DocumentoService documentos) {
+  public NotificacionController(
+      NotificacionService notificaciones,
+      DocumentoService documentos,
+      AuditoriaService auditoria) {
     this.notificaciones = notificaciones;
     this.documentos = documentos;
+    this.auditoria = auditoria;
   }
 
   @GetMapping
@@ -67,5 +74,20 @@ public class NotificacionController {
   @Operation(summary = "Ticket de un pedido confirmado")
   public DocumentoResponse documentoDePedido(@PathVariable String numero) {
     return DocumentoResponse.de(documentos.porPedido(numero));
+  }
+
+  @GetMapping("/auditoria")
+  @PreAuthorize(SecurityRoles.HAS_GESTION)
+  @Operation(summary = "Operaciones sensibles registradas por el consumidor de auditoria")
+  public List<AuditoriaResponse> auditoria(
+      @RequestParam(defaultValue = "50") @Positive @Max(200) int limite) {
+    return auditoria.ultimos(limite).stream().map(AuditoriaResponse::de).toList();
+  }
+
+  @GetMapping("/auditoria/pedido/{numero}")
+  @PreAuthorize(SecurityRoles.HAS_GESTION)
+  @Operation(summary = "Auditoria de un pedido")
+  public List<AuditoriaResponse> auditoriaDePedido(@PathVariable String numero) {
+    return auditoria.porPedido(numero).stream().map(AuditoriaResponse::de).toList();
   }
 }

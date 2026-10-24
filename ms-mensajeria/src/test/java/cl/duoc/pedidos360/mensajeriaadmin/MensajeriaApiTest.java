@@ -189,8 +189,13 @@ class MensajeriaApiTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.exchange").value("pedidos360.eventos"))
         .andExpect(jsonPath("$.exchangeDescarte").value("pedidos360.eventos.dlx"))
-        .andExpect(jsonPath("$.casos[0].dlq").value("pedidos360.documentos.dlq"))
-        .andExpect(jsonPath("$.rutas[0].routingKey").value("pedido.confirmado"));
+        .andExpect(jsonPath("$.exchangeComandos").value("pedidos360.comandos"))
+        // Ordenados alfabeticamente: auditoria es el primer caso de uso y su comando la
+        // primera ruta, porque viaja por el exchange direct.
+        .andExpect(jsonPath("$.casos[0].cola").value("pedidos360.auditoria"))
+        .andExpect(jsonPath("$.casos[0].dlq").value("pedidos360.auditoria.dlq"))
+        .andExpect(jsonPath("$.casos.length()").value(3))
+        .andExpect(jsonPath("$.rutas[0].routingKey").value("auditoria.pedido-anulado"));
   }
 
   @Test

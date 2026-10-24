@@ -172,6 +172,8 @@ crear_ruta 'GET /api/v1/notificaciones'                          "${INT_NOTIFICA
 crear_ruta 'GET /api/v1/notificaciones/pedido/{numero}'          "${INT_NOTIFICACIONES}"
 crear_ruta 'GET /api/v1/notificaciones/documentos'               "${INT_NOTIFICACIONES}"
 crear_ruta 'GET /api/v1/notificaciones/documentos/pedido/{numero}' "${INT_NOTIFICACIONES}"
+crear_ruta 'GET /api/v1/notificaciones/auditoria'                "${INT_NOTIFICACIONES}"
+crear_ruta 'GET /api/v1/notificaciones/auditoria/pedido/{numero}' "${INT_NOTIFICACIONES}"
 
 # ms-mensajeria: administracion de colas, exchanges y bindings
 crear_ruta 'GET /api/v1/mensajeria/topologia'                    "${INT_MENSAJERIA}"
@@ -209,7 +211,7 @@ cat <<RESUMEN
  Issuer    : ${ISSUER}
  Audiencias: [${AUDIENCIAS}]
  Backend   : ${BACKEND_HOST}
- Rutas     : 37 (36 con JWT + /health publico)
+ Rutas     : 39 (38 con JWT + /health publico)
 
  Pruebas rapidas:
    curl -i ${URL}/api/v1/productos            # 401 sin token

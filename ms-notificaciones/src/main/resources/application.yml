@@ -14,8 +14,8 @@ spring:
   # Broker de mensajeria. En local corre en Docker (infra/local/docker-compose.yml) y en la
   # instancia EC2 corre como servicio; nunca se versionan credenciales reales.
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    # Los dos nodos del cluster: si uno cae, el cliente reintenta contra el otro.
+    addresses: ${RABBITMQ_ADDRESSES:localhost:5672,localhost:5673}
     username: ${RABBITMQ_USER:pedidos360}
     password: ${RABBITMQ_PASSWORD:pedidos360}
     virtual-host: ${RABBITMQ_VHOST:/}
@@ -45,6 +45,8 @@ pedidos360:
   # Nombres de exchanges, colas y routing keys: unica fuente de verdad de la mensajeria.
   mensajeria:
     exchange: ${MENSAJERIA_EXCHANGE:pedidos360.eventos}
+    # Exchange direct: comandos con un unico destinatario (auditoria).
+    exchange-comandos: ${MENSAJERIA_EXCHANGE_COMANDOS:pedidos360.comandos}
     exchange-descarte: ${MENSAJERIA_EXCHANGE_DESCARTE:pedidos360.eventos.dlx}
     sufijo-dlq: ${MENSAJERIA_SUFIJO_DLQ:.dlq}
     sufijo-reintento: ${MENSAJERIA_SUFIJO_REINTENTO:.retry}
@@ -55,9 +57,11 @@ pedidos360:
       pedido-creado: ${MENSAJERIA_RUTA_PEDIDO_CREADO:pedido.creado}
       pedido-confirmado: ${MENSAJERIA_RUTA_PEDIDO_CONFIRMADO:pedido.confirmado}
       pedido-estado-cambiado: ${MENSAJERIA_RUTA_PEDIDO_ESTADO:pedido.estado-cambiado}
+      pedido-anulado: ${MENSAJERIA_RUTA_PEDIDO_ANULADO:auditoria.pedido-anulado}
     colas:
       notificaciones: ${MENSAJERIA_COLA_NOTIFICACIONES:pedidos360.notificaciones}
       documentos: ${MENSAJERIA_COLA_DOCUMENTOS:pedidos360.documentos}
+      auditoria: ${MENSAJERIA_COLA_AUDITORIA:pedidos360.auditoria}
 
 management:
   endpoints:

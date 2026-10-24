@@ -1,4 +1,4 @@
-# Mensajería asíncrona con RabbitMQ (EP3)
+# Mensajería asíncrona con RabbitMQ (EP3 y EP4)
 
 Cómo quedó integrado RabbitMQ en Pedidos360: qué se publica, quién lo consume, qué pasa
 cuando algo falla y cómo se administra el broker.
@@ -19,12 +19,18 @@ en otro microservicio, a su ritmo, y si algo falla se reintenta sin afectar al p
 ## 2. Topología
 
 ```
-                      exchange: pedidos360.eventos (topic)
+   CLUSTER RABBITMQ: rabbit1 + rabbit2 (docker compose)
+
+                      exchange: pedidos360.eventos (TOPIC)
                                    │
    pedido.creado ──────────────────┤
    pedido.estado-cambiado ─────────┼──► pedidos360.notificaciones ──► ms-notificaciones
                                    │          │
    pedido.confirmado ──────────────┼──► pedidos360.documentos ──────► ms-notificaciones
+                                   │          │
+                      exchange: pedidos360.comandos (DIRECT)
+                                   │
+   auditoria.pedido-anulado ───────┼──► pedidos360.auditoria ───────► ms-notificaciones
                                    │          │
                                    │          ├── rechazo recuperable ──► <cola>.retry (TTL 5 s)
                                    │          │                              │ vuelve
@@ -36,12 +42,18 @@ en otro microservicio, a su ritmo, y si algo falla se reintenta sin afectar al p
                                    │                                      <cola>.dlq
 ```
 
-Seis colas en total: dos principales, dos de reintento y dos de mensajes muertos.
+Nueve colas en total: **tres principales**, tres de reintento y **tres de mensajes muertos**.
 
-| Caso de uso | Cola principal | Reintento | DLQ | Eventos que recibe |
-|---|---|---|---|---|
-| Notificaciones | `pedidos360.notificaciones` | `.retry` | `.dlq` | `pedido.creado`, `pedido.estado-cambiado` |
-| Documentos | `pedidos360.documentos` | `.retry` | `.dlq` | `pedido.confirmado` |
+| Caso de uso | Cola principal | Reintento | DLQ | Exchange | Eventos que recibe |
+|---|---|---|---|---|---|
+| Notificaciones | `pedidos360.notificaciones` | `.retry` | `.dlq` | topic | `pedido.creado`, `pedido.estado-cambiado` |
+| Documentos | `pedidos360.documentos` | `.retry` | `.dlq` | topic | `pedido.confirmado` |
+| Auditoría | `pedidos360.auditoria` | `.retry` | `.dlq` | **direct** | `auditoria.pedido-anulado` |
+
+**Por qué dos tipos de exchange.** Un hecho que puede interesarle a varios consumidores viaja
+por un exchange **topic**, que enruta por patrón. Una orden con un único responsable —dejar
+registro de una anulación— va por uno **direct**, que enruta por coincidencia exacta de la
+routing key y no se difunde a nadie más.
 
 **Todos los nombres salen de `application.yml`**, bajo `pedidos360.mensajeria`. Ninguna clase
 de negocio escribe el nombre de una cola: lo pide a `MensajeriaProperties`.
@@ -72,6 +84,7 @@ de negocio escribe el nombre de una cola: lo pide a `MensajeriaProperties`.
 |---|---|
 | `NotificacionesListener` | Consume la cola de notificaciones (`@RabbitListener` + `@RabbitHandler`) |
 | `DocumentosListener` | Consume la cola de documentos |
+| `AuditoriaListener` | Consume la cola de auditoría, alimentada por el exchange direct |
 | `NotificacionService` | Genera los avisos; no sabe de colas |
 | `DocumentoService` | Emite el ticket del pedido |
 | `NotificacionController` | API de solo lectura para el frontend |
@@ -140,10 +153,28 @@ eliminar desde el API: responde **409**. Se desactiva con
 
 ---
 
-## 6. Levantarlo en local
+## 6. El clúster de dos nodos
+
+Los dos nodos se levantan con un solo `docker compose` y se descubren entre sí por
+configuración declarativa (`classic_config`): no hay que ejecutar `join_cluster` a mano.
 
 ```bash
-docker compose -f infra/local/docker-compose.yml up -d rabbitmq
+docker compose -f infra/rabbitmq/docker-compose.yml up -d
+docker exec pedidos360-rabbit1 rabbitmqctl cluster_status
+```
+
+| Nodo | AMQP | Consola |
+|---|---|---|
+| `rabbit1` | `localhost:5672` | <http://localhost:15672> |
+| `rabbit2` | `localhost:5673` | <http://localhost:15673> |
+
+Los microservicios se conectan a los **dos** (`spring.rabbitmq.addresses`), así que si un
+nodo cae el cliente reintenta contra el otro. La partición se resuelve sola (`autoheal`).
+
+## 7. Levantarlo en local
+
+```bash
+docker compose -f infra/rabbitmq/docker-compose.yml up -d
 ```
 
 Consola del broker: <http://localhost:15672> (`pedidos360` / `pedidos360`).
@@ -160,7 +191,7 @@ Las colas se crean solas al arrancar: la topología está declarada en beans.
 
 ---
 
-## 7. Demostrar que funciona
+## 8. Demostrar que funciona
 
 ### Camino feliz
 
@@ -189,10 +220,14 @@ El mismo recorrido está automatizado en `infra/local/probar-mensajeria.sh`.
 
 ---
 
-## 8. Desplegar en AWS
+## 9. Desplegar en AWS
 
 ```bash
-# 1. Instalar el broker en la instancia (una sola vez)
+# 1. Levantar el cluster de dos nodos dentro de la instancia
+scp -i ~/.ssh/pedidos360-lab.pem -r infra/rabbitmq ec2-user@<ip-ec2>:/opt/pedidos360/infra/
+ssh -i ~/.ssh/pedidos360-lab.pem ec2-user@<ip-ec2>   'cd /opt/pedidos360/infra/rabbitmq && docker compose up -d && docker exec pedidos360-rabbit1 rabbitmqctl cluster_status'
+
+# 1b. Alternativa de un solo nodo instalado como servicio (sin Docker)
 ./infra/ec2/instalar-rabbitmq.sh <ip-ec2> ~/.ssh/pedidos360-lab.pem
 
 # 2. Guardar las credenciales del broker
@@ -216,7 +251,7 @@ ssh -i ~/.ssh/pedidos360-lab.pem -L 15672:localhost:15672 ec2-user@<ip-ec2>
 
 ---
 
-## 9. Dónde mira la pauta
+## 10. Dónde mira la pauta
 
 | Indicador | Peso | Dónde está |
 |---|---|---|
@@ -231,7 +266,7 @@ ssh -i ~/.ssh/pedidos360-lab.pem -L 15672:localhost:15672 ec2-user@<ip-ec2>
 
 ---
 
-## 10. Pruebas
+## 11. Pruebas
 
 ```bash
 ./mvnw -pl pedidos360-common-messaging,ms-notificaciones,ms-mensajeria test

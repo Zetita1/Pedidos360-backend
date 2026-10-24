@@ -1,11 +1,13 @@
 package cl.duoc.pedidos360.mensajeria.config;
 
+import cl.duoc.pedidos360.mensajeria.evento.PedidoAnuladoEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoConfirmadoEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoCreadoEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoEstadoCambiadoEvento;
 import java.util.Map;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
@@ -13,8 +15,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Declara la topologia completa de RabbitMQ: un exchange de eventos, un exchange de descarte
- * y, por cada caso de uso, su cola principal, su cola de espera entre reintentos y su DLQ.
+ * Declara la topologia completa de RabbitMQ: un exchange <b>topic</b> para los hechos de
+ * dominio, uno <b>direct</b> para los comandos, un exchange de descarte y, por cada caso de
+ * uso, su cola principal, su cola de espera entre reintentos y su DLQ.
  *
  * <p>Cada ruta de mensajeria queda declarada en un bean con nombre propio, y todos los
  * nombres salen de {@link MensajeriaProperties}. Ninguna clase de negocio participa aqui.
@@ -24,6 +27,8 @@ import org.springframework.context.annotation.Configuration;
  *                              ├──► pedidos360.notificaciones ──► .retry ──► (vuelve) ──► .dlq
  *   pedido.estado-cambiado ────┘
  *   pedido.confirmado ─────────────► pedidos360.documentos ─────► .retry ──► (vuelve) ──► .dlq
+ *
+ *   direct: auditoria.pedido-anulado ► pedidos360.auditoria ─────► .retry ──► (vuelve) ──► .dlq
  * </pre>
  */
 @Configuration(proxyBeanMethods = false)
@@ -34,6 +39,9 @@ public class TopologiaMensajeriaConfig {
 
   /** Caso de uso que genera los tickets de los pedidos confirmados. */
   public static final String CASO_DOCUMENTOS = "documentos";
+
+  /** Caso de uso que deja registro de las operaciones sensibles. */
+  public static final String CASO_AUDITORIA = "auditoria";
 
   private final MensajeriaProperties propiedades;
 
@@ -51,6 +59,17 @@ public class TopologiaMensajeriaConfig {
   @Bean
   public TopicExchange exchangeEventos() {
     return new TopicExchange(propiedades.getExchange(), true, false);
+  }
+
+  /**
+   * Exchange de comandos: enruta por coincidencia exacta de la routing key, porque cada
+   * comando tiene un unico consumidor responsable.
+   *
+   * @return exchange de tipo direct, durable
+   */
+  @Bean
+  public DirectExchange exchangeComandos() {
+    return new DirectExchange(propiedades.getExchangeComandos(), true, false);
   }
 
   /**
@@ -138,6 +157,40 @@ public class TopologiaMensajeriaConfig {
   @Bean
   public Binding bindingDocumentosDlq() {
     return bindingDlq(colaDocumentosDlq(), propiedades.cola(CASO_DOCUMENTOS));
+  }
+
+  // ----------------------------------------------------- caso de uso: auditoria
+
+  /** Cola principal de auditoria, alimentada por el exchange direct. */
+  @Bean
+  public Queue colaAuditoria() {
+    return colaPrincipal(propiedades.cola(CASO_AUDITORIA));
+  }
+
+  /** Cola de espera de auditoria entre reintentos. */
+  @Bean
+  public Queue colaAuditoriaReintento() {
+    return colaReintento(propiedades.cola(CASO_AUDITORIA));
+  }
+
+  /** Cola de mensajes muertos de auditoria. */
+  @Bean
+  public Queue colaAuditoriaDlq() {
+    return colaDlq(propiedades.cola(CASO_AUDITORIA));
+  }
+
+  /** Ruta: anular un pedido deja registro en auditoria (coincidencia exacta, no patron). */
+  @Bean
+  public Binding bindingAuditoriaPedidoAnulado() {
+    return BindingBuilder.bind(colaAuditoria())
+        .to(exchangeComandos())
+        .with(propiedades.ruta(PedidoAnuladoEvento.NOMBRE));
+  }
+
+  /** Ruta de descarte de auditoria: del exchange de descarte a su DLQ. */
+  @Bean
+  public Binding bindingAuditoriaDlq() {
+    return bindingDlq(colaAuditoriaDlq(), propiedades.cola(CASO_AUDITORIA));
   }
 
   // ----------------------------------------------------------------- utilidades

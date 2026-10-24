@@ -6,6 +6,7 @@ import cl.duoc.pedidos360.pedidos.client.ClientesClient;
 import cl.duoc.pedidos360.pedidos.client.ClientesClient.ClienteInfo;
 import cl.duoc.pedidos360.pedidos.domain.DetallePedido;
 import cl.duoc.pedidos360.pedidos.domain.EstadoPedido;
+import cl.duoc.pedidos360.mensajeria.evento.PedidoAnuladoEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoConfirmadoEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoConfirmadoEvento.LineaEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoCreadoEvento;
@@ -233,6 +234,21 @@ public class PedidoService {
             estadoAnterior.name(),
             destino.name(),
             motivo));
+
+    // Anular es una operacion sensible: ademas del aviso al cliente, va una orden al
+    // registro de auditoria por el exchange direct.
+    if (destino == EstadoPedido.ANULADO) {
+      publicadorEventos.publicar(
+          PedidoAnuladoEvento.de(
+              pedido.getNumero(),
+              pedido.getId(),
+              pedido.getClienteId(),
+              pedido.getUsuarioOid(),
+              pedido.getUsuarioNombre(),
+              estadoAnterior.name(),
+              pedido.getTotal(),
+              motivo));
+    }
     return pedido;
   }
 

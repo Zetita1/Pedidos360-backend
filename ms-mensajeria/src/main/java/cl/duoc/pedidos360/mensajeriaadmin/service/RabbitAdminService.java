@@ -319,6 +319,7 @@ public class RabbitAdminService {
 
     return new TopologiaResponse(
         topologia.getExchange(),
+        topologia.getExchangeComandos(),
         topologia.getExchangeDescarte(),
         topologia.getMaxIntentos(),
         topologia.getEsperaReintentoMs(),
@@ -341,6 +342,7 @@ public class RabbitAdminService {
   private Set<String> nombresDelSistema() {
     Set<String> nombres = new LinkedHashSet<>();
     nombres.add(topologia.getExchange());
+    nombres.add(topologia.getExchangeComandos());
     nombres.add(topologia.getExchangeDescarte());
     nombres.addAll(colasDelSistema());
     return nombres;

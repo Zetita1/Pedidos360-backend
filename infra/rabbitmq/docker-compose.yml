@@ -1,0 +1,68 @@
+# Cluster de RabbitMQ con dos nodos, pensado para correr dentro de la instancia EC2.
+#
+#   docker compose -f infra/rabbitmq/docker-compose.yml up -d
+#   docker exec pedidos360-rabbit1 rabbitmqctl cluster_status
+#
+# Los dos nodos se descubren solos por configuracion declarativa (classic_config): no hace
+# falta ejecutar join_cluster a mano. Comparten la cookie de Erlang, que es lo que les
+# permite hablarse.
+#
+# Puertos publicados:
+#   rabbit1 -> AMQP 5672, consola 15672
+#   rabbit2 -> AMQP 5673, consola 15673
+#
+# La aplicacion se conecta a los dos (spring.rabbitmq.addresses): si un nodo cae, el cliente
+# reintenta contra el otro.
+services:
+  rabbit1:
+    image: rabbitmq:3.13-management-alpine
+    container_name: pedidos360-rabbit1
+    hostname: rabbit1
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pedidos360}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pedidos360}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-pedidos360-cookie-local}
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - rabbit1-datos:/var/lib/rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks: [pedidos360]
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_running']
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  rabbit2:
+    image: rabbitmq:3.13-management-alpine
+    container_name: pedidos360-rabbit2
+    hostname: rabbit2
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pedidos360}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pedidos360}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-pedidos360-cookie-local}
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - rabbit2-datos:/var/lib/rabbitmq
+    ports:
+      - '5673:5672'
+      - '15673:15672'
+    networks: [pedidos360]
+    depends_on:
+      rabbit1:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_running']
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  rabbit1-datos:
+  rabbit2-datos:
+
+networks:
+  pedidos360:
+    driver: bridge

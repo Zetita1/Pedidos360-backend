@@ -155,7 +155,8 @@ public final class MensajeriaDtos {
   /**
    * Topologia declarada por la aplicacion, la que no deberia tocarse a mano.
    *
-   * @param exchange exchange de eventos
+   * @param exchange exchange de eventos (topic)
+   * @param exchangeComandos exchange de comandos (direct)
    * @param exchangeDescarte exchange de descarte
    * @param maxIntentos intentos antes de la DLQ
    * @param esperaReintentoMs espera entre reintentos
@@ -164,6 +165,7 @@ public final class MensajeriaDtos {
    */
   public record TopologiaResponse(
       String exchange,
+      String exchangeComandos,
       String exchangeDescarte,
       int maxIntentos,
       long esperaReintentoMs,

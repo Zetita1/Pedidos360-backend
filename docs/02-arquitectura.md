@@ -17,9 +17,10 @@ flowchart LR
     MP --> MC
     GW --> MN[ms-notificaciones :8084]
     GW --> MM[ms-mensajeria :8085<br/>administra el broker]
-    MP -->|6. publica eventos| MQ{{RabbitMQ<br/>pedidos360.eventos}}
-    MQ -->|notificaciones| MN
-    MQ -->|documentos| MN
+    MP -->|6. publica eventos| MQ{{RabbitMQ cluster<br/>rabbit1 + rabbit2}}
+    MQ -->|topic: notificaciones| MN
+    MQ -->|topic: documentos| MN
+    MQ -->|direct: auditoria| MN
     MQ -.->|rechazos| DLQ[(DLQ por cola)]
     MM -.->|declara y elimina| MQ
     MP --> DB[(Amazon RDS<br/>PostgreSQL)]

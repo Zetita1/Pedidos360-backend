@@ -31,9 +31,10 @@ public class RabbitPublicadorEventos implements PublicadorEventos {
   @Override
   public void publicar(EventoPedidos360 evento) {
     String rutaEvento = propiedades.ruta(evento.nombreLogico());
+    String exchange = propiedades.exchangeDe(evento.tipoExchange());
     try {
       rabbitTemplate.convertAndSend(
-          propiedades.getExchange(),
+          exchange,
           rutaEvento,
           evento,
           mensaje -> {
@@ -43,9 +44,10 @@ public class RabbitPublicadorEventos implements PublicadorEventos {
             return mensaje;
           });
       log.info(
-          "Evento {} publicado en {} con routing key {} (pedido {})",
+          "Evento {} publicado en {} ({}) con routing key {} (pedido {})",
           evento.nombreLogico(),
-          propiedades.getExchange(),
+          exchange,
+          evento.tipoExchange(),
           rutaEvento,
           evento.pedidoNumero());
     } catch (AmqpException e) {

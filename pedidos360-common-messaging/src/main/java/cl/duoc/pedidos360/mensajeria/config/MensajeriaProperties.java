@@ -18,6 +18,14 @@ public class MensajeriaProperties {
   /** Exchange de tipo topic por donde viajan los eventos de dominio. */
   private String exchange = "pedidos360.eventos";
 
+  /**
+   * Exchange de tipo direct para los comandos dirigidos a un unico consumidor.
+   *
+   * <p>Se usa topic cuando un hecho puede interesarle a varios (un pedido creado), y direct
+   * cuando la orden tiene un destinatario exacto (registrar una operacion en auditoria).
+   */
+  private String exchangeComandos = "pedidos360.comandos";
+
   /** Exchange de descarte: recibe lo que las colas rechazan y lo deriva a su DLQ. */
   private String exchangeDescarte = "pedidos360.eventos.dlx";
 
@@ -42,14 +50,16 @@ public class MensajeriaProperties {
           Map.of(
               "pedido-creado", "pedido.creado",
               "pedido-confirmado", "pedido.confirmado",
-              "pedido-estado-cambiado", "pedido.estado-cambiado"));
+              "pedido-estado-cambiado", "pedido.estado-cambiado",
+              "pedido-anulado", "auditoria.pedido-anulado"));
 
   /** Colas por caso de uso. La clave es el nombre logico del caso de uso. */
   private Map<String, String> colas =
       new LinkedHashMap<>(
           Map.of(
               "notificaciones", "pedidos360.notificaciones",
-              "documentos", "pedidos360.documentos"));
+              "documentos", "pedidos360.documentos",
+              "auditoria", "pedidos360.auditoria"));
 
   /**
    * Routing key de un evento.
@@ -109,6 +119,24 @@ public class MensajeriaProperties {
 
   public void setExchange(String exchange) {
     this.exchange = exchange;
+  }
+
+  public String getExchangeComandos() {
+    return exchangeComandos;
+  }
+
+  public void setExchangeComandos(String exchangeComandos) {
+    this.exchangeComandos = exchangeComandos;
+  }
+
+  /**
+   * Exchange por el que sale un evento segun su tipo.
+   *
+   * @param tipo tipo de exchange declarado por el evento
+   * @return nombre del exchange configurado
+   */
+  public String exchangeDe(TipoExchange tipo) {
+    return tipo == TipoExchange.COMANDOS ? exchangeComandos : exchange;
   }
 
   public String getExchangeDescarte() {

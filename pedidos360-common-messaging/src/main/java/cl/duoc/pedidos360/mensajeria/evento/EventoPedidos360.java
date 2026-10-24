@@ -1,5 +1,6 @@
 package cl.duoc.pedidos360.mensajeria.evento;
 
+import cl.duoc.pedidos360.mensajeria.config.TipoExchange;
 import java.time.Instant;
 
 /**
@@ -9,7 +10,11 @@ import java.time.Instant;
  * resuelve desde {@code pedidos360.mensajeria.rutas}, nunca dentro del evento.
  */
 public sealed interface EventoPedidos360
-    permits PedidoCreadoEvento, PedidoConfirmadoEvento, PedidoEstadoCambiadoEvento {
+    permits
+        PedidoCreadoEvento,
+        PedidoConfirmadoEvento,
+        PedidoEstadoCambiadoEvento,
+        PedidoAnuladoEvento {
 
   /** Identificador unico del evento, util para rastrearlo en los logs y evitar duplicados. */
   String eventoId();
@@ -26,4 +31,14 @@ public sealed interface EventoPedidos360
    * @return nombre logico, por ejemplo {@code pedido-creado}
    */
   String nombreLogico();
+
+  /**
+   * Exchange por el que sale el evento. Por defecto el de hechos de dominio (topic); los
+   * comandos con destinatario unico lo sobrescriben.
+   *
+   * @return tipo de exchange
+   */
+  default TipoExchange tipoExchange() {
+    return TipoExchange.EVENTOS;
+  }
 }

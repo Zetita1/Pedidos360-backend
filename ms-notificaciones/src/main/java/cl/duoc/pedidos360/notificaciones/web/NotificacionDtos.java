@@ -2,6 +2,7 @@ package cl.duoc.pedidos360.notificaciones.web;
 
 import cl.duoc.pedidos360.notificaciones.domain.Documento;
 import cl.duoc.pedidos360.notificaciones.domain.Notificacion;
+import cl.duoc.pedidos360.notificaciones.domain.RegistroAuditoria;
 import cl.duoc.pedidos360.notificaciones.domain.TipoNotificacion;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -96,6 +97,56 @@ public final class NotificacionDtos {
           documento.getContenido(),
           documento.getEventoId(),
           documento.getCreadoEn());
+    }
+  }
+
+  /**
+   * Operacion sensible registrada por el consumidor de auditoria.
+   *
+   * @param id identificador del registro
+   * @param operacion operacion auditada
+   * @param pedidoNumero correlativo del pedido
+   * @param clienteId cliente afectado
+   * @param usuarioOid identidad de quien la ejecuto
+   * @param usuarioNombre nombre de quien la ejecuto
+   * @param estadoAnterior estado previo del pedido
+   * @param monto monto involucrado
+   * @param motivo justificacion
+   * @param ocurridoEn momento del hecho
+   * @param eventoId comando de RabbitMQ que lo origino
+   */
+  public record AuditoriaResponse(
+      Long id,
+      String operacion,
+      String pedidoNumero,
+      Long clienteId,
+      String usuarioOid,
+      String usuarioNombre,
+      String estadoAnterior,
+      BigDecimal monto,
+      String motivo,
+      Instant ocurridoEn,
+      String eventoId) {
+
+    /**
+     * Construye la respuesta desde la entidad.
+     *
+     * @param registro entidad persistida
+     * @return representacion publica
+     */
+    public static AuditoriaResponse de(RegistroAuditoria registro) {
+      return new AuditoriaResponse(
+          registro.getId(),
+          registro.getOperacion(),
+          registro.getPedidoNumero(),
+          registro.getClienteId(),
+          registro.getUsuarioOid(),
+          registro.getUsuarioNombre(),
+          registro.getEstadoAnterior(),
+          registro.getMonto(),
+          registro.getMotivo(),
+          registro.getOcurridoEn(),
+          registro.getEventoId());
     }
   }
 }
