@@ -50,9 +50,9 @@ services:
       - '5673:5672'
       - '15673:15672'
     networks: [pedidos360]
-    depends_on:
-      rabbit1:
-        condition: service_healthy
+    # Sin depends_on a proposito: al reiniciar un cluster ya formado, cada nodo espera las
+    # tablas del otro. Si se serializa el arranque, el primero se queda esperando a un nodo
+    # que nunca parte (timeout_waiting_for_tables). Arrancan juntos y se sincronizan solos.
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_running']
       interval: 15s

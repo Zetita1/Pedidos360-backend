@@ -8,6 +8,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -86,6 +87,26 @@ public class MensajeriaAutoConfiguration {
     fabrica.setMaxConcurrentConsumers(Math.max(propiedades.getConsumidores(), 4));
     fabrica.setPrefetchCount(propiedades.getConsumidores());
     return fabrica;
+  }
+
+  /**
+   * Declara la topologia en el broker y permite administrarla.
+   *
+   * <p>Se define aqui y no se deja al autoconfigurado de Spring Boot porque el modulo lo
+   * necesita siempre: es quien crea colas, exchanges y bindings al arrancar, y el
+   * microservicio administrador lo usa para operar sobre ellos.
+   *
+   * @param connectionFactory conexion a RabbitMQ
+   * @return administrador del broker
+   */
+  @Bean
+  @ConditionalOnMissingBean(RabbitAdmin.class)
+  public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
+    RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+    // Si el broker no esta disponible al arrancar, el servicio igual parte y la topologia
+    // se declara cuando la conexion se restablece.
+    admin.setIgnoreDeclarationExceptions(true);
+    return admin;
   }
 
   /**
