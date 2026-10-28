@@ -1,0 +1,231 @@
+<mxfile host="app.diagrams.net" modified="2026-10-27T00:00:00.000Z" agent="Pedidos360" version="24.7.7" type="device">
+  <diagram id="pedidos360-arquitectura-v2" name="Arquitectura Pedidos360 v2">
+    <mxGraphModel dx="1700" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1180" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================= titulo ================= -->
+        <mxCell id="titulo" value="Pedidos360 &#8212; Arquitectura 2.0 con mensajer&#237;a as&#237;ncrona" style="text;html=1;fontSize=24;fontStyle=1;fontColor=#1B2B4B;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="18" width="900" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitulo" value="DSY1107 Desarrollo Cloud Native I &#183; secci&#243;n 005V &#183; Joshua Mardones y Sof&#237;a Troncoso&#10;Identidad en Microsoft Entra External ID &#183; AWS API Gateway con validaci&#243;n JWT &#183; seis microservicios Spring Boot en EC2 &#183; cl&#250;ster RabbitMQ de dos nodos" style="text;html=1;fontSize=12;fontColor=#5B6578;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="56" width="1000" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ================= contenedores ================= -->
+        <mxCell id="cAzure" value="MICROSOFT AZURE &#8212; ENTRA EXTERNAL ID (IDaaS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F1FB;strokeColor=#0078D4;strokeWidth=2;dashed=1;verticalAlign=top;fontSize=13;fontStyle=1;fontColor=#0063B1;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="500" y="100" width="520" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="cAmplify" value="AWS AMPLIFY HOSTING (HTTPS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF6E8;strokeColor=#FF9900;strokeWidth=2;dashed=1;verticalAlign=top;fontSize=12;fontStyle=1;fontColor=#B85F00;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="430" width="330" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="cAws" value="AWS &#8212; CUENTA 286145611273 &#183; REGI&#211;N US-EAST-1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF6E8;strokeColor=#FF9900;strokeWidth=2;dashed=1;verticalAlign=top;fontSize=13;fontStyle=1;fontColor=#B85F00;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="430" y="430" width="1230" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="cEc2" value="EC2 i-0f8db5d98822339d6 &#183; t3.medium &#183; IP el&#225;stica 54.156.41.241 &#183; servicios systemd habilitados" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85F00;strokeWidth=1;dashed=1;verticalAlign=top;fontSize=11;fontStyle=1;fontColor=#B85F00;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="790" y="470" width="840" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="cRabbit" value="CL&#218;STER RABBITMQ (docker compose, dentro de la instancia, solo localhost)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E8;strokeColor=#F96500;strokeWidth=2;verticalAlign=top;fontSize=11;fontStyle=1;fontColor=#C24E00;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="815" y="740" width="790" height="270" as="geometry" />
+        </mxCell>
+
+        <!-- ================= usuario y frontend ================= -->
+        <mxCell id="usuario" value="Usuario&#10;(navegador)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#1B2B4B;fontColor=#1B2B4B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="185" y="180" width="40" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="spa" value="&lt;b&gt;Frontend Angular 21 (SPA)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;main.d1pem9n2nc75cz.amplifyapp.com&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;MSAL &#183; MsalGuard &#183; rolGuard&lt;br&gt;MsalInterceptor (Bearer autom&#225;tico)&lt;br&gt;vistas: tablero, pedidos, mensajer&#237;a&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B2B4B;strokeWidth=2;fontColor=#1B2B4B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="468" width="290" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="spaLocal" value="Respaldo de desarrollo: &lt;b&gt;localhost:4200&lt;/b&gt; (registrado en Entra y en CORS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7F9FC;strokeColor=#8497B0;dashed=1;fontColor=#5B6578;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="588" width="290" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ================= azure ================= -->
+        <mxCell id="tenant" value="&lt;b&gt;Tenant externo (CIAM)&lt;/b&gt;&#10;pedidos360duocuc.onmicrosoft.com&#10;Directory ID 9d265688-dbb5-4a46-9b9a-8f6765928aa0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D6E8F9;strokeColor=#0078D4;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="515" y="135" width="490" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="regApi" value="&lt;b&gt;Registro: pedidos360-api&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;api://pedidos360-api&lt;br&gt;scopes: Pedidos.Read &#183; Write&lt;br&gt;roles: Admin &#183; Vendedor &#183; Cliente&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="515" y="197" width="240" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="regSpa" value="&lt;b&gt;Registro: pedidos360-spa&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;plataforma SPA (PKCE)&lt;br&gt;redirect: Amplify + localhost&lt;br&gt;flujo impl&#237;cito desactivado&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="765" y="197" width="240" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="flujo" value="&lt;b&gt;Flujo de usuario&lt;/b&gt; &#183; autorregistro" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="515" y="295" width="240" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="usuarios" value="&lt;b&gt;Usuarios y roles&lt;/b&gt; &#183; cuentas locales" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="765" y="295" width="240" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="emision" value="&lt;b&gt;Emite el access token JWT (RS256)&lt;/b&gt; &#8212; claims iss, aud, exp, roles y scp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D6E8F9;strokeColor=#0078D4;fontColor=#1B2B4B;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="515" y="345" width="490" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- ================= api gateway ================= -->
+        <mxCell id="gateway" value="&lt;b&gt;AWS API Gateway&lt;/b&gt; &#183; HTTP API&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;j9w6eomnw5.execute-api.us-east-1.amazonaws.com&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;&#183; &lt;b&gt;39 rutas&lt;/b&gt; expl&#237;citas (38 con JWT)&lt;br&gt;&#183; autorizador &lt;b&gt;entra-external-id&lt;/b&gt;:&lt;br&gt;&#160;&#160;firma, issuer, audiencia y vigencia&lt;br&gt;&#183; CORS: Amplify + localhost:4200&lt;br&gt;&#183; etapa $default con auto-deploy&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE3BF;strokeColor=#FF9900;strokeWidth=2;fontColor=#1B2B4B;fontSize=12;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="460" y="480" width="300" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="err401" value="&#10007; &lt;b&gt;401&lt;/b&gt; sin token o token inv&#225;lido:&#10;responde el gateway, no llega al EC2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDEBEA;strokeColor=#C0392B;fontColor=#C0392B;fontSize=10;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="692" width="300" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="salud" value="&lt;b&gt;GET /health&lt;/b&gt; &#8212; &#250;nica ruta p&#250;blica&#10;(actuator del BFF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F4EC;strokeColor=#1E7A4F;fontColor=#1E7A4F;fontSize=10;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="744" width="300" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="sg" value="&lt;b&gt;Security group&lt;/b&gt; sg-02cd650528012d232&#10;SSH 22 solo desde nuestra IP&#10;&lt;b&gt;8080-8085&lt;/b&gt; alcanzables &#8594; por eso cada&#10;microservicio revalida el token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85F00;fontColor=#1B2B4B;fontSize=10;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="796" width="300" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="datos" value="Persistencia: una base por microservicio&#10;(H2 en desarrollo &#183; PostgreSQL en el perfil aws)" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B6578;fontColor=#1B2B4B;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="460" y="884" width="300" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================= microservicios ================= -->
+        <mxCell id="bff" value="&lt;b&gt;BFF&lt;/b&gt; :8080&#10;perfil y tablero" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85F00;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="815" y="515" width="280" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="pedidos" value="&lt;b&gt;ms-pedidos&lt;/b&gt; :8081 &#8212; &lt;b&gt;productor&lt;/b&gt;&#10;publica los eventos de pedido" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E8;strokeColor=#F96500;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="815" y="585" width="280" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="productos" value="&lt;b&gt;ms-productos&lt;/b&gt; :8082&#10;cat&#225;logo y stock" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85F00;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="815" y="655" width="280" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="clientes" value="&lt;b&gt;ms-clientes&lt;/b&gt; :8083&#10;fichas de clientes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85F00;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="515" width="290" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="notificaciones" value="&lt;b&gt;ms-notificaciones&lt;/b&gt; :8084 &#8212; &lt;b&gt;consumidor&lt;/b&gt;&#10;avisos &#183; tickets &#183; auditor&#237;a" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F4EC;strokeColor=#1E7A4F;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="585" width="290" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="mensajeria" value="&lt;b&gt;ms-mensajeria&lt;/b&gt; :8085 &#8212; &lt;b&gt;administrador&lt;/b&gt;&#10;colas, exchanges y bindings por REST" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#5B21B6;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="655" width="290" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="seguridadMs" value="Los seis revalidan el JWT y exigen el rol con @PreAuthorize &#8594; &lt;b&gt;403&lt;/b&gt;" style="text;html=1;fontSize=10;fontColor=#1E7A4F;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="815" y="714" width="420" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="nuevo1" value="NUEVO 2.0" style="text;html=1;fontSize=9;fontStyle=1;fontColor=#1E7A4F;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1414" y="588" width="70" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="nuevo2" value="NUEVO 2.0" style="text;html=1;fontSize=9;fontStyle=1;fontColor=#5B21B6;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1414" y="658" width="70" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- ================= cluster rabbitmq ================= -->
+        <mxCell id="rabbit1" value="&lt;b&gt;rabbit1&lt;/b&gt;&#10;AMQP 5672 &#183; consola 15672" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F96500;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="835" y="785" width="175" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="rabbit2" value="&lt;b&gt;rabbit2&lt;/b&gt;&#10;AMQP 5673 &#183; consola 15673" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F96500;strokeWidth=2;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="835" y="855" width="175" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="clusterNota" value="Mismo cl&#250;ster: classic_config + cookie de Erlang&#10;autoheal ante particiones &#183; restart autom&#225;tico" style="text;html=1;fontSize=9;fontColor=#C24E00;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="828" y="915" width="190" height="34" as="geometry" />
+        </mxCell>
+
+        <mxCell id="exTopic" value="&lt;b&gt;pedidos360.eventos&lt;/b&gt; &#183; TOPIC&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;pedido.creado &#183; pedido.estado-cambiado &#8594; cola notificaciones&lt;br&gt;pedido.confirmado &#8594; cola documentos&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE3BF;strokeColor=#F96500;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="782" width="545" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="exDirect" value="&lt;b&gt;pedidos360.comandos&lt;/b&gt; &#183; DIRECT&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;auditoria.pedido-anulado &#8594; cola auditoria (coincidencia exacta, un solo destinatario)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3EDFF;strokeColor=#0063B1;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="846" width="545" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="colas" value="&lt;b&gt;9 colas&lt;/b&gt;: notificaciones &#183; documentos &#183; auditoria, cada una con su &lt;b&gt;.retry&lt;/b&gt; (TTL 5 s) y su &lt;b&gt;.dlq&lt;/b&gt;&#10;Lo que se rechaza sale por pedidos360.eventos.dlx hacia la DLQ de su propia cola" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDEBEA;strokeColor=#C0392B;fontColor=#1B2B4B;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="904" width="545" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ================= notas ================= -->
+        <mxCell id="novedades" value="&lt;b&gt;QU&#201; CAMBI&#211; EN LA VERSI&#211;N 2.0&lt;/b&gt;&lt;br&gt;&lt;br&gt;&#183; Cl&#250;ster RabbitMQ de &lt;b&gt;dos nodos&lt;/b&gt; con docker compose&lt;br&gt;&#183; Exchanges &lt;b&gt;topic&lt;/b&gt; (hechos) y &lt;b&gt;direct&lt;/b&gt; (&#243;rdenes)&lt;br&gt;&#183; &lt;b&gt;Tres colas&lt;/b&gt; con su cola de reintento y su DLQ&lt;br&gt;&#183; &lt;b&gt;ms-notificaciones&lt;/b&gt;: consumidores por dominio&lt;br&gt;&#183; &lt;b&gt;ms-mensajeria&lt;/b&gt;: administra el broker por REST&lt;br&gt;&#183; ms-pedidos pasa a ser &lt;b&gt;productor&lt;/b&gt; de eventos&lt;br&gt;&#183; API Gateway: de 22 a &lt;b&gt;39 rutas&lt;/b&gt; con JWT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F4EC;strokeColor=#1E7A4F;dashed=1;align=left;spacingLeft=12;verticalAlign=top;spacingTop=10;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="660" width="330" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="notas" value="&lt;b&gt;EL TOKEN SE VALIDA EN TRES CAPAS&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;1. API Gateway&lt;/b&gt;: firma, emisor, audiencia y vigencia &#8594; &lt;b&gt;401&lt;/b&gt;&lt;br&gt;&lt;b&gt;2. Microservicio&lt;/b&gt;: lo mismo, m&#225;s tenant y rol &#8594; &lt;b&gt;403&lt;/b&gt;&lt;br&gt;&lt;b&gt;3. Llamadas internas&lt;/b&gt;: el token se reenv&#237;a y se revalida&lt;br&gt;&lt;br&gt;&lt;i&gt;El gateway decide qui&#233;n eres; el microservicio, qu&#233; puedes hacer.&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7F9FC;strokeColor=#8497B0;dashed=1;align=left;spacingLeft=12;verticalAlign=top;spacingTop=10;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="862" width="330" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="flujoLogin" value="&lt;b&gt;OIDC: AUTHORIZATION CODE + PKCE&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;response_type=code &#183; code_challenge (S256) &#183; state &#183; nonce&lt;br&gt;El code verifier nunca sale del navegador.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F1FB;strokeColor=#0078D4;dashed=1;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;fontColor=#1B2B4B;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="repos" value="&lt;b&gt;C&#243;digo fuente&lt;/b&gt;&#10;github.com/Zetita1/Pedidos360-backend &#183; github.com/Zetita1/Pedidos360-frontend&#10;Evidencia y scripts: carpetas docs/ e infra/ del repositorio backend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8497B0;dashed=1;fontColor=#5B6578;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="430" y="1070" width="1230" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- ================= flechas ================= -->
+        <mxCell id="e0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B2B4B;strokeWidth=2;" edge="1" parent="1" source="usuario" target="spa">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e0l" value="abre la aplicaci&#243;n" style="edgeLabel;html=1;fontSize=11;fontColor=#1B2B4B;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e0">
+          <mxGeometry x="-0.45" relative="1" as="geometry"><mxPoint x="-6" y="-12" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0078D4;strokeWidth=2;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="spa" target="emision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1l" value="1. login con PKCE" style="edgeLabel;html=1;fontSize=11;fontColor=#0063B1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e1">
+          <mxGeometry x="-0.35" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0078D4;strokeWidth=2;dashed=1;exitX=0;exitY=0.9;exitDx=0;exitDy=0;entryX=0.95;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="emision" target="spa">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2l" value="2. access token JWT" style="edgeLabel;html=1;fontSize=11;fontColor=#0063B1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e2">
+          <mxGeometry x="0.3" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#FF9900;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="spa" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3l" value="3. HTTPS + Bearer" style="edgeLabel;html=1;fontSize=11;fontColor=#B85F00;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e3">
+          <mxGeometry relative="1" as="geometry"><mxPoint y="-12" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0078D4;strokeWidth=2;dashed=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="emision" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4l" value="claves p&#250;blicas (JWKS)" style="edgeLabel;html=1;fontSize=10;fontColor=#0063B1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e4">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#FF9900;strokeWidth=2;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="gateway" target="bff">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5l" value="4. proxy a cada microservicio" style="edgeLabel;html=1;fontSize=10;fontColor=#B85F00;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e5">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint y="10" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#FF9900;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="gateway" target="pedidos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#FF9900;strokeWidth=2;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="gateway" target="productos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#F96500;strokeWidth=3;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.1;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="pedidos" target="exTopic">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="955" y="762" /><mxPoint x="1094" y="762" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e8l" value="5. publica el evento y responde" style="edgeLabel;html=1;fontSize=10;fontColor=#C24E00;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e8">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E7A4F;strokeWidth=3;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="exTopic" target="notificaciones">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1640" y="799" /><mxPoint x="1640" y="614" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e9l" value="6. consume (ACK manual)" style="edgeLabel;html=1;fontSize=10;fontColor=#1E7A4F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e9">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0063B1;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="exDirect" target="notificaciones">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1610" y="871" /><mxPoint x="1610" y="626" /></Array></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#5B21B6;strokeWidth=2;dashed=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="mensajeria" target="exDirect">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1192" y="726" /><mxPoint x="1312" y="726" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e11l" value="7. declara y elimina colas" style="edgeLabel;html=1;fontSize=10;fontColor=#5B21B6;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="e11">
+          <mxGeometry x="0.45" relative="1" as="geometry"><mxPoint x="30" y="-14" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#F96500;strokeWidth=2;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="rabbit1" target="exTopic">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B2B4B;strokeWidth=2;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="rabbit1" target="rabbit2">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1025" y="811" /><mxPoint x="1025" y="881" /></Array></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -18,6 +18,9 @@ services:
     image: rabbitmq:3.13-management-alpine
     container_name: pedidos360-rabbit1
     hostname: rabbit1
+    # Si la instancia se reinicia, el cluster vuelve solo: no depende de ejecutar
+    # docker compose a mano antes de una demo.
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pedidos360}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pedidos360}
@@ -39,6 +42,7 @@ services:
     image: rabbitmq:3.13-management-alpine
     container_name: pedidos360-rabbit2
     hostname: rabbit2
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pedidos360}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pedidos360}
