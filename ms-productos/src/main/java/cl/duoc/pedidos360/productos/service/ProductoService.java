@@ -1,6 +1,8 @@
 package cl.duoc.pedidos360.productos.service;
 
 import cl.duoc.pedidos360.productos.domain.Producto;
+import cl.duoc.pedidos360.streaming.evento.StockStreamEvento;
+import cl.duoc.pedidos360.streaming.publicacion.PublicadorStream;
 import cl.duoc.pedidos360.productos.repository.ProductoRepository;
 import cl.duoc.pedidos360.productos.web.ProductoDtos.ActualizarProductoRequest;
 import cl.duoc.pedidos360.productos.web.ProductoDtos.CrearProductoRequest;
@@ -18,10 +20,15 @@ public class ProductoService {
 
   private static final Logger log = LoggerFactory.getLogger(ProductoService.class);
 
-  private final ProductoRepository repository;
+  /** Flujo de streaming que mantiene el stock vigente de cada producto. */
+  private static final String FLUJO_STOCK = "stock";
 
-  public ProductoService(ProductoRepository repository) {
+  private final ProductoRepository repository;
+  private final PublicadorStream publicadorStream;
+
+  public ProductoService(ProductoRepository repository, PublicadorStream publicadorStream) {
     this.repository = repository;
+    this.publicadorStream = publicadorStream;
   }
 
   @Transactional(readOnly = true)
@@ -65,18 +72,21 @@ public class ProductoService {
             request.categoria().trim());
     Producto guardado = repository.save(producto);
     log.info("Producto creado id={} sku={}", guardado.getId(), guardado.getSku());
+    publicarStock(guardado, 0, "Alta de producto");
     return guardado;
   }
 
   @Transactional
   public Producto actualizar(Long id, ActualizarProductoRequest request) {
     Producto producto = obtener(id);
+    int stockAnterior = producto.getStock();
     producto.actualizarDatos(
         request.nombre().trim(),
         request.descripcion(),
         request.precio(),
         request.stock(),
         request.categoria().trim());
+    publicarStock(producto, stockAnterior, "Ajuste manual de catalogo");
     return producto;
   }
 
@@ -92,8 +102,10 @@ public class ProductoService {
         repository
             .findByIdParaActualizarStock(id)
             .orElseThrow(() -> new RecursoNoEncontradoException("producto", id));
+    int stockAnterior = producto.getStock();
     producto.descontarStock(cantidad);
     log.info("Stock descontado producto={} cantidad={} motivo={}", id, cantidad, motivo);
+    publicarStock(producto, stockAnterior, motivo);
     return producto;
   }
 
@@ -103,8 +115,35 @@ public class ProductoService {
         repository
             .findByIdParaActualizarStock(id)
             .orElseThrow(() -> new RecursoNoEncontradoException("producto", id));
+    int stockAnterior = producto.getStock();
     producto.reponerStock(cantidad);
     log.info("Stock repuesto producto={} cantidad={} motivo={}", id, cantidad, motivo);
+    publicarStock(producto, stockAnterior, motivo);
     return producto;
+  }
+
+  /**
+   * Publica el estado de stock del producto en el topico compactado.
+   *
+   * <p>Se publica el valor absoluto, no la diferencia: el topico es la fuente del stock
+   * vigente, y un consumidor que se reincorpora tiene que poder quedar al dia con el ultimo
+   * registro de cada producto sin reconstruir la historia.
+   *
+   * @param producto producto ya actualizado
+   * @param stockAnterior stock que tenia antes del movimiento
+   * @param motivo origen del movimiento
+   */
+  private void publicarStock(Producto producto, Integer stockAnterior, String motivo) {
+    publicadorStream.publicar(
+        FLUJO_STOCK,
+        StockStreamEvento.de(
+            producto.getId(),
+            producto.getSku(),
+            producto.getNombre(),
+            producto.getCategoria(),
+            producto.getPrecio(),
+            stockAnterior,
+            producto.getStock(),
+            motivo));
   }
 }

@@ -1,0 +1,38 @@
+# Kafka UI: consola web para administrar brokers, topicos, particiones y mensajes.
+#
+# Va en su propio archivo porque es una herramienta de operacion, no parte del cluster: se
+# levanta y se baja sin tocar los brokers ni perder datos.
+#
+#   docker compose -f infra/kafka/docker-compose.yml up -d        # primero el cluster
+#   docker compose -f infra/kafka-ui/docker-compose.yml up -d     # despues la consola
+#   http://localhost:8088
+#
+# Se conecta por la red del cluster (pedidos360-kafka, declarada externa aqui) y por el
+# listener INTERNAL, que es el que resuelve entre contenedores.
+name: pedidos360-kafka-ui
+
+services:
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: pedidos360-kafka-ui
+    restart: unless-stopped
+    ports:
+      - '8088:8080'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: pedidos360
+      # Los tres brokers: la consola sigue funcionando si uno no responde.
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29092,kafka2:29092,kafka3:29092
+      # Con Zookeeper declarado, la consola muestra tambien el estado del ensemble.
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zk1:2181,zk2:2181,zk3:2181
+      # Habilita crear y editar topicos desde la interfaz, no solo mirarlos.
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      # Sin autenticacion: la consola escucha en el equipo local y no se publica a internet.
+      AUTH_TYPE: DISABLED
+      JAVA_OPTS: -Xms128M -Xmx384M
+    networks: [kafka]
+
+networks:
+  # La crea infra/kafka/docker-compose.yml; aqui solo se usa.
+  kafka:
+    name: pedidos360-kafka
+    external: true

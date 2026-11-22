@@ -36,7 +36,14 @@ import org.springframework.test.web.servlet.MockMvc;
  * Pruebas de extremo a extremo del API de pedidos con los microservicios de dominio
  * simulados: cubren autorizacion por rol, creacion, confirmacion y anulacion.
  */
-@SpringBootTest
+@SpringBootTest(
+    properties = {
+      // La prueba no necesita el cluster: no se declaran topicos y la publicacion desiste
+      // rapido si no hay broker, igual que lo haria en produccion.
+      "pedidos360.streaming.declarar-topicos=false",
+      "spring.kafka.producer.properties.max.block.ms=1000",
+      "spring.kafka.admin.fail-fast=false"
+    })
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
 class PedidoApiTest {

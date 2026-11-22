@@ -11,6 +11,42 @@ spring:
     default: local
   jackson:
     default-property-inclusion: non_null
+  # Cluster de streaming: tres brokers. Basta uno accesible para descubrir el cluster
+  # completo, pero se listan los tres para que el arranque no dependa de cual este arriba.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092,localhost:9093,localhost:9094}
+    client-id: ms-productos
+    producer:
+      # Los serializers tambien se declaran aqui, que es el contrato del cliente; las fabricas
+      # de pedidos360-common-streaming instancian estos mismos con el ObjectMapper de la
+      # aplicacion para respetar el formato de fechas y montos. El interruptor de las
+      # cabeceras de tipo se fija ahi mismo: Spring Kafka no permite configurar el
+      # serializador por propiedades y por codigo a la vez.
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      # acks=all junto a min.insync.replicas=2 en el topico: la escritura se confirma cuando
+      # dos de las tres replicas la tienen.
+      acks: all
+      retries: 5
+      batch-size: 16384
+      buffer-memory: 33554432
+      compression-type: lz4
+      properties:
+        # Evita que un reintento del propio productor duplique el registro.
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 15000
+        # Agrupa envios muy seguidos en un solo lote sin agregar latencia perceptible.
+        linger.ms: 20
+        # Si el cluster no responde, el envio falla rapido en vez de retener el hilo de la
+        # peticion: el hecho de negocio ya esta guardado y no debe esperar a la analitica.
+        max.block.ms: 5000
+    admin:
+      # Si el cluster no esta arriba al iniciar, el microservicio parte igual y los topicos se
+      # declaran cuando la conexion se establece.
+      fail-fast: false
+      operation-timeout: 10s
   jpa:
     open-in-view: false
     properties:
@@ -32,6 +68,27 @@ pedidos360:
     required-scopes: ${ENTRA_REQUIRED_SCOPES:}
     clock-skew-seconds: 60
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  # Topicos, grupos y politicas del streaming: unica fuente de verdad de Kafka.
+  streaming:
+    particiones: ${KAFKA_PARTICIONES:3}
+    replicas: ${KAFKA_REPLICAS:3}
+    replicas-en-sincronia: ${KAFKA_MIN_ISR:2}
+    sufijo-dlt: ${KAFKA_SUFIJO_DLT:.dlt}
+    max-intentos: ${KAFKA_MAX_INTENTOS:3}
+    espera-reintento-ms: ${KAFKA_ESPERA_REINTENTO_MS:1000}
+    consumidores: ${KAFKA_CONSUMIDORES:3}
+    retencion-pedidos-ms: ${KAFKA_RETENCION_PEDIDOS_MS:604800000}
+    retencion-descarte-ms: ${KAFKA_RETENCION_DESCARTE_MS:1209600000}
+    topicos:
+      # Historia de hechos: se borra por tiempo.
+      pedidos: ${KAFKA_TOPICO_PEDIDOS:pedidos360.pedidos.eventos}
+      # Estado por producto: se compacta y conserva el ultimo valor de cada clave.
+      stock: ${KAFKA_TOPICO_STOCK:pedidos360.inventario.stock}
+    grupos:
+      analitica-ventas: ${KAFKA_GRUPO_ANALITICA:pedidos360-analitica-ventas}
+      proyeccion-stock: ${KAFKA_GRUPO_STOCK:pedidos360-proyeccion-stock}
+      archivo-pedidos: ${KAFKA_GRUPO_ARCHIVO:pedidos360-archivo-pedidos}
+
 
 management:
   endpoints:

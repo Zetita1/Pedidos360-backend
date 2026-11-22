@@ -20,7 +20,14 @@ import org.springframework.test.web.servlet.MockMvc;
  * Verifica que el microservicio solo responda ante un JWT valido y con el rol adecuado,
  * tal como lo exige el indicador de evaluacion.
  */
-@SpringBootTest
+@SpringBootTest(
+    properties = {
+      // La prueba no necesita el cluster: no se declaran topicos y la publicacion desiste
+      // rapido si no hay broker, igual que lo haria en produccion.
+      "pedidos360.streaming.declarar-topicos=false",
+      "spring.kafka.producer.properties.max.block.ms=1000",
+      "spring.kafka.admin.fail-fast=false"
+    })
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
 class ProductoApiSecurityTest {

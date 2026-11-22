@@ -1,6 +1,7 @@
 package cl.duoc.pedidos360.notificaciones.web;
 
 import cl.duoc.pedidos360.notificaciones.domain.Documento;
+import cl.duoc.pedidos360.notificaciones.domain.HechoPedidoArchivado;
 import cl.duoc.pedidos360.notificaciones.domain.Notificacion;
 import cl.duoc.pedidos360.notificaciones.domain.RegistroAuditoria;
 import cl.duoc.pedidos360.notificaciones.domain.TipoNotificacion;
@@ -147,6 +148,65 @@ public final class NotificacionDtos {
           registro.getMotivo(),
           registro.getOcurridoEn(),
           registro.getEventoId());
+    }
+  }
+
+  /**
+   * Hecho de pedido archivado desde el topico de Kafka, con sus coordenadas de origen.
+   *
+   * @param eventoId identificador del evento
+   * @param tipo hecho que traia el registro
+   * @param pedidoNumero correlativo del pedido
+   * @param clienteId identificador del cliente
+   * @param clienteNombre razon social del cliente
+   * @param total monto del pedido
+   * @param estadoAnterior estado previo
+   * @param estadoNuevo estado resultante
+   * @param motivo justificacion del cambio
+   * @param topico topico de origen
+   * @param particion particion de origen
+   * @param offset posicion en la particion
+   * @param ocurridoEn momento del hecho
+   * @param archivadoEn momento en que se archivo
+   */
+  public record ArchivoResponse(
+      String eventoId,
+      String tipo,
+      String pedidoNumero,
+      Long clienteId,
+      String clienteNombre,
+      BigDecimal total,
+      String estadoAnterior,
+      String estadoNuevo,
+      String motivo,
+      String topico,
+      int particion,
+      long offset,
+      Instant ocurridoEn,
+      Instant archivadoEn) {
+
+    /**
+     * Construye la respuesta desde la entidad.
+     *
+     * @param hecho entidad persistida
+     * @return representacion publica
+     */
+    public static ArchivoResponse de(HechoPedidoArchivado hecho) {
+      return new ArchivoResponse(
+          hecho.getEventoId(),
+          hecho.getTipo(),
+          hecho.getPedidoNumero(),
+          hecho.getClienteId(),
+          hecho.getClienteNombre(),
+          hecho.getTotal(),
+          hecho.getEstadoAnterior(),
+          hecho.getEstadoNuevo(),
+          hecho.getMotivo(),
+          hecho.getTopico(),
+          hecho.getParticion(),
+          hecho.getOffset(),
+          hecho.getOcurridoEn(),
+          hecho.getArchivadoEn());
     }
   }
 }

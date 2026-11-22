@@ -12,6 +12,8 @@ import cl.duoc.pedidos360.mensajeria.evento.PedidoConfirmadoEvento.LineaEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoCreadoEvento;
 import cl.duoc.pedidos360.mensajeria.evento.PedidoEstadoCambiadoEvento;
 import cl.duoc.pedidos360.mensajeria.publicacion.PublicadorEventos;
+import cl.duoc.pedidos360.streaming.evento.PedidoStreamEvento;
+import cl.duoc.pedidos360.streaming.publicacion.PublicadorStream;
 import cl.duoc.pedidos360.pedidos.domain.Pedido;
 import cl.duoc.pedidos360.pedidos.repository.PedidoRepository;
 import cl.duoc.pedidos360.pedidos.web.PedidoDtos.CrearPedidoRequest;
@@ -38,20 +40,26 @@ public class PedidoService {
 
   private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
 
+  /** Flujo de streaming al que se publican los hechos del pedido. */
+  private static final String FLUJO_PEDIDOS = "pedidos";
+
   private final PedidoRepository repository;
   private final CatalogoClient catalogoClient;
   private final ClientesClient clientesClient;
   private final PublicadorEventos publicadorEventos;
+  private final PublicadorStream publicadorStream;
 
   public PedidoService(
       PedidoRepository repository,
       CatalogoClient catalogoClient,
       ClientesClient clientesClient,
-      PublicadorEventos publicadorEventos) {
+      PublicadorEventos publicadorEventos,
+      PublicadorStream publicadorStream) {
     this.repository = repository;
     this.catalogoClient = catalogoClient;
     this.clientesClient = clientesClient;
     this.publicadorEventos = publicadorEventos;
+    this.publicadorStream = publicadorStream;
   }
 
   @Transactional(readOnly = true)
@@ -154,6 +162,20 @@ public class PedidoService {
             cliente.email(),
             guardado.getTotal(),
             guardado.getDetalles().size()));
+
+    // RabbitMQ lleva la tarea que hay que ejecutar (avisar, emitir el ticket); Kafka lleva el
+    // hecho para quien quiera analizarlo. Son dos propositos distintos sobre el mismo hecho,
+    // y por eso conviven sin estorbarse.
+    publicadorStream.publicar(
+        FLUJO_PEDIDOS,
+        PedidoStreamEvento.creado(
+            guardado.getNumero(),
+            guardado.getId(),
+            cliente.id(),
+            cliente.razonSocial(),
+            guardado.getTotal(),
+            guardado.getDetalles().size(),
+            usuarioOid));
     return guardado;
   }
 
@@ -190,6 +212,17 @@ public class PedidoService {
             emailDelCliente(pedido.getClienteId()),
             pedido.getTotal(),
             pedido.getDetalles().stream().map(PedidoService::aLineaEvento).toList()));
+
+    publicadorStream.publicar(
+        FLUJO_PEDIDOS,
+        PedidoStreamEvento.confirmado(
+            pedido.getNumero(),
+            pedido.getId(),
+            pedido.getClienteId(),
+            pedido.getClienteRazonSocial(),
+            pedido.getTotal(),
+            pedido.getDetalles().size(),
+            pedido.getUsuarioOid()));
     return pedido;
   }
 
@@ -234,6 +267,20 @@ public class PedidoService {
             estadoAnterior.name(),
             destino.name(),
             motivo));
+
+    publicadorStream.publicar(
+        FLUJO_PEDIDOS,
+        PedidoStreamEvento.estadoCambiado(
+            pedido.getNumero(),
+            pedido.getId(),
+            pedido.getClienteId(),
+            pedido.getClienteRazonSocial(),
+            pedido.getTotal(),
+            pedido.getDetalles().size(),
+            estadoAnterior.name(),
+            destino.name(),
+            motivo,
+            pedido.getUsuarioOid()));
 
     // Anular es una operacion sensible: ademas del aviso al cliente, va una orden al
     // registro de auditoria por el exchange direct.

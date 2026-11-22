@@ -21,6 +21,25 @@ spring:
     virtual-host: ${RABBITMQ_VHOST:/}
     connection-timeout: 5s
 
+  # Cluster de streaming: el administrador solo necesita la conexion, para hablarle al
+  # cluster con el cliente administrativo de Kafka.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092,localhost:9093,localhost:9094}
+    client-id: ms-mensajeria
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        max.block.ms: 5000
+    listener:
+      # Este servicio administra, no consume: no tiene ningun listener declarado.
+      auto-startup: false
+      missing-topics-fatal: false
+    admin:
+      fail-fast: false
+      operation-timeout: 10s
+
 # Parametros del IDaaS (Microsoft Entra ID). En EC2 se inyectan por variables de entorno
 # o por AWS Systems Manager Parameter Store; nunca se versionan valores reales.
 pedidos360:
@@ -36,6 +55,28 @@ pedidos360:
     required-scopes: ${ENTRA_REQUIRED_SCOPES:}
     clock-skew-seconds: 60
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  # Topicos y grupos del streaming: el administrador los lee para saber cuales son del sistema
+  # y protegerlos contra borrado.
+  streaming:
+    particiones: ${KAFKA_PARTICIONES:3}
+    replicas: ${KAFKA_REPLICAS:3}
+    replicas-en-sincronia: ${KAFKA_MIN_ISR:2}
+    sufijo-dlt: ${KAFKA_SUFIJO_DLT:.dlt}
+    # Los topicos los declaran ms-analitica y el script de infraestructura.
+    declarar-topicos: ${KAFKA_DECLARAR_TOPICOS:false}
+    topicos:
+      pedidos: ${KAFKA_TOPICO_PEDIDOS:pedidos360.pedidos.eventos}
+      stock: ${KAFKA_TOPICO_STOCK:pedidos360.inventario.stock}
+    grupos:
+      analitica-ventas: ${KAFKA_GRUPO_ANALITICA:pedidos360-analitica-ventas}
+      proyeccion-stock: ${KAFKA_GRUPO_STOCK:pedidos360-proyeccion-stock}
+      archivo-pedidos: ${KAFKA_GRUPO_ARCHIVO:pedidos360-archivo-pedidos}
+
+  # Parametros del administrador de Kafka.
+  kafka-admin:
+    timeout-segundos: ${KAFKA_ADMIN_TIMEOUT:10}
+    proteger-topologia-del-sistema: ${KAFKA_ADMIN_PROTEGER:true}
+
 
   # Nombres de exchanges, colas y routing keys: unica fuente de verdad de la mensajeria.
   mensajeria:

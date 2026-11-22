@@ -1,6 +1,7 @@
 package cl.duoc.pedidos360.mensajeriaadmin;
 
 import cl.duoc.pedidos360.mensajeriaadmin.config.AdminMensajeriaProperties;
+import cl.duoc.pedidos360.mensajeriaadmin.config.AdminStreamingProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -10,7 +11,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  * colas, exchanges y bindings, y la topologia declarada por la aplicacion.
  */
 @SpringBootApplication
-@EnableConfigurationProperties(AdminMensajeriaProperties.class)
+@EnableConfigurationProperties({AdminMensajeriaProperties.class, AdminStreamingProperties.class})
 public class MsMensajeriaApplication {
 
   public static void main(String[] args) {

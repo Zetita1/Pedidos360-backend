@@ -1,8 +1,10 @@
 package cl.duoc.pedidos360.notificaciones.web;
 
+import cl.duoc.pedidos360.notificaciones.service.ArchivoPedidosService;
 import cl.duoc.pedidos360.notificaciones.service.AuditoriaService;
 import cl.duoc.pedidos360.notificaciones.service.DocumentoService;
 import cl.duoc.pedidos360.notificaciones.service.NotificacionService;
+import cl.duoc.pedidos360.notificaciones.web.NotificacionDtos.ArchivoResponse;
 import cl.duoc.pedidos360.notificaciones.web.NotificacionDtos.AuditoriaResponse;
 import cl.duoc.pedidos360.notificaciones.web.NotificacionDtos.DocumentoResponse;
 import cl.duoc.pedidos360.notificaciones.web.NotificacionDtos.NotificacionResponse;
@@ -36,14 +38,17 @@ public class NotificacionController {
   private final NotificacionService notificaciones;
   private final DocumentoService documentos;
   private final AuditoriaService auditoria;
+  private final ArchivoPedidosService archivo;
 
   public NotificacionController(
       NotificacionService notificaciones,
       DocumentoService documentos,
-      AuditoriaService auditoria) {
+      AuditoriaService auditoria,
+      ArchivoPedidosService archivo) {
     this.notificaciones = notificaciones;
     this.documentos = documentos;
     this.auditoria = auditoria;
+    this.archivo = archivo;
   }
 
   @GetMapping
@@ -89,5 +94,20 @@ public class NotificacionController {
   @Operation(summary = "Auditoria de un pedido")
   public List<AuditoriaResponse> auditoriaDePedido(@PathVariable String numero) {
     return auditoria.porPedido(numero).stream().map(AuditoriaResponse::de).toList();
+  }
+
+  @GetMapping("/archivo")
+  @PreAuthorize(SecurityRoles.HAS_GESTION)
+  @Operation(summary = "Hechos de pedidos archivados desde el topico de Kafka")
+  public List<ArchivoResponse> archivo(
+      @RequestParam(defaultValue = "50") @Positive @Max(200) int limite) {
+    return archivo.ultimos(limite).stream().map(ArchivoResponse::de).toList();
+  }
+
+  @GetMapping("/archivo/pedido/{numero}")
+  @PreAuthorize(SecurityRoles.HAS_GESTION)
+  @Operation(summary = "Historia completa de un pedido, en el orden en que ocurrio")
+  public List<ArchivoResponse> historiaDePedido(@PathVariable String numero) {
+    return archivo.historiaDe(numero).stream().map(ArchivoResponse::de).toList();
   }
 }

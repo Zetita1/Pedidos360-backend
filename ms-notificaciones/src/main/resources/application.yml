@@ -20,6 +20,42 @@ spring:
     password: ${RABBITMQ_PASSWORD:pedidos360}
     virtual-host: ${RABBITMQ_VHOST:/}
     connection-timeout: 5s
+  # Cluster de streaming: tres brokers. Este servicio consume el mismo topico de pedidos que
+  # la analitica, pero con su propio grupo, asi que recibe el flujo completo.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092,localhost:9093,localhost:9094}
+    client-id: ms-notificaciones
+    consumer:
+      group-id: ${KAFKA_GRUPO_ARCHIVO:pedidos360-archivo-pedidos}
+      # El tipo que se deserializa no se configura aqui: cada fabrica de
+      # pedidos360-common-streaming construye su JsonDeserializer apuntando al DTO exacto de
+      # su topico y con las cabeceras de tipo ignoradas. Es mas estricto que una lista de
+      # paquetes confiables, porque el mensaje no puede influir en que clase se instancia.
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 50
+      properties:
+        session.timeout.ms: 45000
+        heartbeat.interval.ms: 3000
+        max.poll.interval.ms: 300000
+    producer:
+      # El productor se usa solo para derivar al topico de descarte lo que no se pudo archivar.
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 5
+      properties:
+        enable.idempotence: true
+        max.block.ms: 5000
+    listener:
+      ack-mode: record
+      type: single
+      missing-topics-fatal: false
+    admin:
+      fail-fast: false
+      operation-timeout: 10s
   jpa:
     open-in-view: false
     properties:
@@ -41,6 +77,28 @@ pedidos360:
     required-scopes: ${ENTRA_REQUIRED_SCOPES:}
     clock-skew-seconds: 60
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  # Topicos y grupos del streaming: los mismos nombres que usan los demas microservicios.
+  streaming:
+    particiones: ${KAFKA_PARTICIONES:3}
+    replicas: ${KAFKA_REPLICAS:3}
+    replicas-en-sincronia: ${KAFKA_MIN_ISR:2}
+    sufijo-dlt: ${KAFKA_SUFIJO_DLT:.dlt}
+    max-intentos: ${KAFKA_MAX_INTENTOS:3}
+    espera-reintento-ms: ${KAFKA_ESPERA_REINTENTO_MS:1000}
+    consumidores: ${KAFKA_CONSUMIDORES:3}
+    retencion-pedidos-ms: ${KAFKA_RETENCION_PEDIDOS_MS:604800000}
+    retencion-descarte-ms: ${KAFKA_RETENCION_DESCARTE_MS:1209600000}
+    # Los topicos ya los declara ms-analitica y el script de infraestructura; este servicio
+    # solo los consume.
+    declarar-topicos: ${KAFKA_DECLARAR_TOPICOS:false}
+    topicos:
+      pedidos: ${KAFKA_TOPICO_PEDIDOS:pedidos360.pedidos.eventos}
+      stock: ${KAFKA_TOPICO_STOCK:pedidos360.inventario.stock}
+    grupos:
+      analitica-ventas: ${KAFKA_GRUPO_ANALITICA:pedidos360-analitica-ventas}
+      proyeccion-stock: ${KAFKA_GRUPO_STOCK:pedidos360-proyeccion-stock}
+      archivo-pedidos: ${KAFKA_GRUPO_ARCHIVO:pedidos360-archivo-pedidos}
+
 
   # Nombres de exchanges, colas y routing keys: unica fuente de verdad de la mensajeria.
   mensajeria:
@@ -146,3 +204,6 @@ spring:
     listener:
       simple:
         auto-startup: false
+  kafka:
+    listener:
+      auto-startup: false
